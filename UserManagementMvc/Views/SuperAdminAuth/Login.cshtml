@@ -1,0 +1,66 @@
+﻿@model UserManagementMvc.ViewModels.LoginViewModel
+
+@{
+    ViewData["Title"] = "Super Admin Login";
+}
+
+<div class="container mt-5" style="max-width:500px;">
+
+    <h2 class="text-center">Super Admin Login</h2>
+    <hr />
+
+    @if (ViewBag.Error != null)
+    {
+        <div class="alert alert-danger">
+            @ViewBag.Error
+        </div>
+    }
+
+    <form asp-controller="SuperAdminAuth"
+          asp-action="Login"
+          method="post"
+          autocomplete="off">
+
+        <div class="mb-3">
+            <label>Login Id</label>
+            <input asp-for="LoginId"
+                   class="form-control"
+                   placeholder="Username / Email / Mobile" />
+
+            <span asp-validation-for="LoginId" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label>Password</label>
+            <input asp-for="Password"
+                   type="password"
+                   class="form-control"
+                   placeholder="Enter password"
+                   autocomplete="new-password" />
+
+            <span asp-validation-for="Password" class="text-danger"></span>
+        </div>
+
+        <button type="submit" class="btn btn-danger">
+            Super Admin Login
+        </button>
+
+        <a asp-controller="Home"
+           asp-action="Index"
+           class="btn btn-secondary">
+            Back
+        </a>
+
+        <a asp-controller="Auth"
+           asp-action="ForgotPassword"
+           class="btn btn-link">
+            Forgot Password?
+        </a>
+
+    </form>
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,233 @@
+﻿@model UserManagementMvc.Models.User
+@using Microsoft.AspNetCore.Http
+
+@{
+    ViewData["Title"] = "Edit User";
+
+    var role = Context.Session.GetString("UserRole");
+
+    var securityQuestionMasters =
+        ViewBag.SecurityQuestionMasters as List<UserManagementMvc.Models.Securityquestionmaster>
+        ?? new List<UserManagementMvc.Models.Securityquestionmaster>();
+
+    var currentSecurityQuestions =
+        ViewBag.CurrentSecurityQuestions as List<string>
+        ?? new List<string>();
+}
+
+<h2>Edit User</h2>
+
+@if (ViewBag.Error != null)
+{
+    <div class="alert alert-danger">
+        @ViewBag.Error
+    </div>
+}
+
+<form asp-action="Edit" method="post">
+
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="PasswordHash" />
+    <input type="hidden" asp-for="CreatedAt" />
+    <input type="hidden" asp-for="IsDeleted" />
+
+    <div class="mb-3">
+        <label>Name</label>
+        <input asp-for="Name" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label>Username</label>
+        <input asp-for="UserName" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label>Email</label>
+        <input asp-for="Email" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label>Mobile</label>
+
+        <div class="d-flex gap-2">
+            <select asp-for="MobileCountryCode"
+                    id="countryCode"
+                    class="form-select"
+                    style="max-width:120px;">
+                <option value="+91" data-length="10">🇮🇳 +91</option>
+                <option value="+1" data-length="10">🇺🇸 +1</option>
+                <option value="+44" data-length="10">🇬🇧 +44</option>
+                <option value="+977" data-length="10">🇳🇵 +977</option>
+                <option value="+971" data-length="9">🇦🇪 +971</option>
+                <option value="+92" data-length="10">🇵🇰 +92</option>
+                <option value="+880" data-length="10">🇧🇩 +880</option>
+            </select>
+
+            <input asp-for="Mobile"
+                   id="mobileInput"
+                   class="form-control"
+                   placeholder="Enter mobile number" />
+        </div>
+    </div>
+
+    @if (role == "Admin" || role == "SuperAdmin")
+    {
+        <div class="mb-3">
+            <label>Role</label>
+
+            <select asp-for="Role" class="form-select">
+                <option value="User">User</option>
+                <option value="Admin">Admin</option>
+
+                @if (role == "SuperAdmin")
+                {
+                    <option value="SuperAdmin">SuperAdmin</option>
+                }
+            </select>
+
+            @if (role == "Admin")
+            {
+                <small class="text-muted">
+                    Admin cannot assign SuperAdmin role.
+                </small>
+            }
+        </div>
+
+        <div class="mb-3">
+            <label>Department</label>
+
+            <select asp-for="Department" class="form-select">
+                <option value="General">General</option>
+                <option value="Finance">Finance</option>
+                <option value="Sales">Sales</option>
+                <option value="Backend Developer">Backend Developer</option>
+                <option value="Frontend Developer">Frontend Developer</option>
+                <option value="Full Stack Developer">Full Stack Developer</option>
+                <option value="HR">HR</option>
+                <option value="Support">Support</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label>User Status</label>
+
+            <select asp-for="IsActive" class="form-select">
+                <option value="true">Active</option>
+                <option value="false">Inactive</option>
+            </select>
+        </div>
+    }
+    else
+    {
+        <input type="hidden" asp-for="Role" />
+        <input type="hidden" asp-for="Department" />
+        <input type="hidden" asp-for="IsActive" />
+    }
+
+    <hr />
+
+    <h4>Security Questions</h4>
+
+    @if (currentSecurityQuestions.Count > 0)
+    {
+        <div class="alert alert-info">
+            <b>Current Security Questions:</b>
+
+            <ol class="mb-0 mt-2">
+                @foreach (var question in currentSecurityQuestions)
+                {
+                    <li>@question</li>
+                }
+            </ol>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning">
+            No security questions are set for this account.
+        </div>
+    }
+
+    <p class="text-muted">
+        To update security questions, select 3 new questions and enter answers.
+        Leave this section blank if you do not want to update security questions.
+    </p>
+
+    @for (int i = 0; i < 3; i++)
+    {
+        <div class="mb-3 border rounded p-3">
+
+            <label>New Security Question @(i + 1)</label>
+
+            <select name="SecurityQuestions[@i].SecurityQuestionMasterId"
+                    class="form-select edit-security-question"
+                    data-other-box="editOtherQuestion_@i">
+
+                <option value="">-- Select Question --</option>
+
+                @foreach (var q in securityQuestionMasters)
+                {
+                    <option value="@q.Id">@q.QuestionText</option>
+                }
+
+                <option value="0">Other</option>
+            </select>
+
+            <input name="SecurityQuestions[@i].QuestionText"
+                   id="editOtherQuestion_@i"
+                   class="form-control mt-2"
+                   placeholder="Enter your own question"
+                   style="display:none;" />
+
+            <input name="SecurityQuestions[@i].Answer"
+                   class="form-control mt-2"
+                   placeholder="Enter new answer" />
+
+        </div>
+    }
+
+    <button type="submit" class="btn btn-success">
+        Update
+    </button>
+
+    <a asp-action="Index" class="btn btn-secondary">
+        Back
+    </a>
+
+</form>
+
+@section Scripts {
+    <script>
+        const countryCode = document.getElementById("countryCode");
+        const mobileInput = document.getElementById("mobileInput");
+
+        function updateMobileLength() {
+            const selectedOption = countryCode.options[countryCode.selectedIndex];
+            const requiredLength = selectedOption.getAttribute("data-length");
+
+            mobileInput.maxLength = requiredLength;
+            mobileInput.placeholder = "Enter " + requiredLength + " digit number";
+        }
+
+        countryCode.addEventListener("change", updateMobileLength);
+        updateMobileLength();
+
+        document.querySelectorAll(".edit-security-question").forEach(function (dropdown) {
+
+            function toggleOtherBox() {
+                const otherBoxId = dropdown.getAttribute("data-other-box");
+                const otherBox = document.getElementById(otherBoxId);
+
+                if (dropdown.value === "0") {
+                    otherBox.style.display = "block";
+                } else {
+                    otherBox.style.display = "none";
+                    otherBox.value = "";
+                }
+            }
+
+            dropdown.addEventListener("change", toggleOtherBox);
+            toggleOtherBox();
+        });
+    </script>
+}

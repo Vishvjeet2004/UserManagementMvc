@@ -1,0 +1,101 @@
+﻿@model UserManagementMvc.ViewModels.LoginViewModel
+
+@{
+    ViewData["Title"] = "Login";
+}
+
+<div class="container mt-5">
+    <div class="mx-auto" style="max-width: 500px;">
+
+        <div class="card shadow-sm p-4">
+
+            <h2 class="text-center fw-bold mb-3">
+                Login
+            </h2>
+
+            <hr />
+
+            @if (ViewBag.Error != null)
+            {
+                <div class="alert alert-danger"
+                     role="alert">
+                    <strong>Warning:</strong>
+                    @ViewBag.Error
+                </div>
+            }
+
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success"
+                     role="alert">
+                    @TempData["Success"]
+                </div>
+            }
+
+            <form asp-controller="UserAuth"
+                  asp-action="Login"
+                  method="post"
+                  autocomplete="off">
+
+                @Html.AntiForgeryToken()
+
+                <div class="mb-3">
+                    <label asp-for="LoginId"
+                           class="form-label">
+                        Login ID
+                    </label>
+
+                    <input asp-for="LoginId"
+                           class="form-control"
+                           placeholder="Username / Email / Mobile"
+                           autocomplete="off" />
+
+                    <span asp-validation-for="LoginId"
+                          class="text-danger">
+                    </span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Password"
+                           class="form-label">
+                        Password
+                    </label>
+
+                    <input asp-for="Password"
+                           type="password"
+                           class="form-control"
+                           placeholder="Enter password"
+                           autocomplete="new-password" />
+
+                    <span asp-validation-for="Password"
+                          class="text-danger">
+                    </span>
+                </div>
+
+                <button type="submit"
+                        class="btn btn-success">
+                    Login
+                </button>
+
+                <a asp-controller="Home"
+                   asp-action="Index"
+                   class="btn btn-secondary">
+                    Back
+                </a>
+
+                <a asp-controller="UserAuth"
+                   asp-action="ForgotPassword"
+                   class="ms-3">
+                    Forgot Password?
+                </a>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts
+{
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,303 @@
+﻿@model List<UserManagementMvc.Models.User>
+
+@{
+    ViewData["Title"] = "User List";
+    bool isAdmin = ViewBag.IsAdmin == true;
+
+    string search = ViewBag.Search as string;
+    string roleFilter = ViewBag.RoleFilter as string;
+    string departmentFilter = ViewBag.DepartmentFilter as string;
+    string statusFilter = ViewBag.StatusFilter as string;
+
+    int currentPage = ViewBag.CurrentPage ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
+}
+
+<h2>@(isAdmin ? "User List" : "My Profile")</h2>
+
+@if (isAdmin)
+{
+    <a href="/Users/Create" class="btn btn-success">Add User</a>
+    <a href="/Users/Trash" class="btn btn-warning">Trash</a>
+}
+
+@if (ViewBag.IsSuperAdmin == true)
+{
+    <a asp-controller="Export"
+       asp-action="UsersPdf"
+       asp-route-search="@search"
+       asp-route-roleFilter="@roleFilter"
+       asp-route-departmentFilter="@departmentFilter"
+       asp-route-statusFilter="@statusFilter"
+       class="btn btn-danger">
+
+        📄 Export PDF
+    </a>
+
+    <a asp-controller="Export"
+       asp-action="UsersExcel"
+       asp-route-search="@search"
+       asp-route-roleFilter="@roleFilter"
+       asp-route-departmentFilter="@departmentFilter"
+       asp-route-statusFilter="@statusFilter"
+       class="btn btn-success">
+
+        📊 Export Excel
+    </a>
+}
+
+<a href="/Dashboard/Index" class="btn btn-secondary">← Dashboard</a>
+
+@if (!isAdmin)
+{
+    <button type="button"
+            class="btn btn-danger"
+            data-bs-toggle="modal"
+            data-bs-target="#deleteMyAccountModal">
+        Delete My Account
+    </button>
+}
+
+<br />
+<br />
+
+@if (isAdmin)
+{
+    <!-- Search and filter section -->
+    <form method="get" asp-action="Index" class="row g-3 mb-4">
+
+        <div class="col-md-3">
+            <input type="text"
+                   name="search"
+                   value="@search"
+                   class="form-control"
+                   placeholder="Search name, username, email, mobile" />
+        </div>
+
+        <div class="col-md-2">
+            <select name="roleFilter" class="form-select">
+                <option value="">All Roles</option>
+                <option value="Admin" selected="@(roleFilter == "Admin")">Admin</option>
+                <option value="User" selected="@(roleFilter == "User")">User</option>
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <select name="departmentFilter" class="form-select">
+                <option value="">All Departments</option>
+                <option value="General" selected="@(departmentFilter == "General")">General</option>
+                <option value="Finance" selected="@(departmentFilter == "Finance")">Finance</option>
+                <option value="Sales" selected="@(departmentFilter == "Sales")">Sales</option>
+                <option value="Backend Developer" selected="@(departmentFilter == "Backend Developer")">Backend Developer</option>
+                <option value="Frontend Developer" selected="@(departmentFilter == "Frontend Developer")">Frontend Developer</option>
+                <option value="Full Stack Developer" selected="@(departmentFilter == "Full Stack Developer")">Full Stack Developer</option>
+                <option value="HR" selected="@(departmentFilter == "HR")">HR</option>
+                <option value="Support" selected="@(departmentFilter == "Support")">Support</option>
+            </select>
+        </div>
+
+        <div class="col-md-2">
+            <select name="statusFilter" class="form-select">
+                <option value="">All Status</option>
+                <option value="Active" selected="@(statusFilter == "Active")">Active</option>
+                <option value="Inactive" selected="@(statusFilter == "Inactive")">Inactive</option>
+            </select>
+        </div>
+
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary">
+                Search
+            </button>
+
+            <a href="/Users/Index" class="btn btn-secondary">
+                Reset
+            </a>
+        </div>
+
+    </form>
+}
+
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Name</th>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Mobile</th>
+            <th>Role</th>
+            <th>Department</th>
+            <th>Status</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        @foreach (var user in Model)
+        {
+            <tr>
+                <td>@user.Id</td>
+                <td>@user.Name</td>
+                <td>@user.UserName</td>
+                <td>@user.Email</td>
+                <td>@user.MobileCountryCode @user.Mobile</td>
+                <td>@user.Role</td>
+                <td>@user.Department</td>
+
+                <td>
+                    @if (user.IsActive == true)
+                    {
+                        <span class="badge bg-success">Active</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Inactive</span>
+                    }
+                </td>
+
+                <td>
+                    <a href="/Users/Edit/@user.Id"
+                       class="btn btn-primary btn-sm">
+                        Edit
+                    </a>
+
+                    @if (isAdmin)
+                    {
+                        <button type="button"
+                                class="btn btn-warning btn-sm"
+                                data-bs-toggle="modal"
+                                data-bs-target="#moveToTrashModal"
+                                data-user-id="@user.Id"
+                                data-user-name="@user.Name">
+                            Move to Trash
+                        </button>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@if (isAdmin && totalPages > 1)
+{
+    <!-- Pagination section -->
+    <nav>
+        <ul class="pagination">
+
+            @if (currentPage > 1)
+            {
+                <li class="page-item">
+                    <a class="page-link"
+                       href="/Users/Index?page=@(currentPage - 1)&search=@search&roleFilter=@roleFilter&departmentFilter=@departmentFilter&statusFilter=@statusFilter">
+                        Previous
+                    </a>
+                </li>
+            }
+
+            @for (int i = 1; i <= totalPages; i++)
+            {
+                <li class="page-item @(i == currentPage ? "active" : "")">
+                    <a class="page-link"
+                       href="/Users/Index?page=@i&search=@search&roleFilter=@roleFilter&departmentFilter=@departmentFilter&statusFilter=@statusFilter">
+                        @i
+                    </a>
+                </li>
+            }
+
+            @if (currentPage < totalPages)
+            {
+                <li class="page-item">
+                    <a class="page-link"
+                       href="/Users/Index?page=@(currentPage + 1)&search=@search&roleFilter=@roleFilter&departmentFilter=@departmentFilter&statusFilter=@statusFilter">
+                        Next
+                    </a>
+                </li>
+            }
+
+        </ul>
+    </nav>
+}
+
+<!-- Move User to Trash Confirmation Modal -->
+<div class="modal fade" id="moveToTrashModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title text-warning">Move User to Trash</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                Are you sure you want to move
+                <b id="trashUserName"></b>
+                to Trash?
+            </div>
+
+            <div class="modal-footer">
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    Cancel
+                </button>
+
+                <a id="trashConfirmBtn"
+                   class="btn btn-warning">
+                    Move to Trash
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Delete My Account Confirmation Modal -->
+<div class="modal fade" id="deleteMyAccountModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title text-danger">Delete My Account</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <p>Are you sure you want to delete your account?</p>
+                <p class="text-danger">
+                    Your account will be moved to Trash. Admin can restore it later.
+                </p>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    Cancel
+                </button>
+
+                <a href="/Users/DeleteMyAccount"
+                   class="btn btn-danger">
+                    Delete My Account
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Selected user data is passed to the modal before moving to trash
+        var moveToTrashModal = document.getElementById('moveToTrashModal');
+
+        moveToTrashModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+
+            var userId = button.getAttribute('data-user-id');
+            var userName = button.getAttribute('data-user-name');
+
+            document.getElementById('trashUserName').innerText = userName;
+            document.getElementById('trashConfirmBtn').href = '/Users/SoftDelete/' + userId;
+        });
+    </script>
+}

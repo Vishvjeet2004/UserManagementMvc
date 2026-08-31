@@ -1,0 +1,77 @@
+﻿@model UserManagementMvc.Models.Sitecontentsection
+
+@{
+    ViewData["Title"] = "Edit " + (ViewBag.ItemName as string ?? "Section");
+
+    var itemName = ViewBag.ItemName as string ?? "Section";
+    var titleLabel = ViewBag.TitleLabel as string ?? "Title";
+    var contentLabel = ViewBag.ContentLabel as string ?? "Description";
+    var helpText = ViewBag.HelpText as string ?? "";
+}
+
+<h2>Edit @itemName</h2>
+
+<p class="text-muted">
+    @helpText
+</p>
+
+@if (ViewBag.Error != null)
+{
+    <div class="alert alert-danger">
+        @ViewBag.Error
+    </div>
+}
+
+<form asp-action="Edit" method="post">
+
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="PageName" />
+    <input type="hidden" asp-for="CreatedAt" />
+
+    <div class="mb-3">
+        <label>@titleLabel</label>
+        <input asp-for="SectionTitle"
+               class="form-control"
+               placeholder="Enter title" />
+    </div>
+
+    <div class="mb-3">
+        <label>@contentLabel</label>
+        <textarea asp-for="SectionContent"
+                  class="form-control"
+                  rows="7"
+                  placeholder="Write description here"></textarea>
+    </div>
+
+    <div class="mb-3">
+        <label>Display Order</label>
+        <input asp-for="DisplayOrder"
+               type="number"
+               min="1"
+               class="form-control" />
+
+        <small class="text-muted">
+            Duplicate order is not allowed.
+            If this order already exists, other items will shift automatically.
+        </small>
+    </div>
+
+    <div class="mb-3">
+        <label>Status</label>
+        <select asp-for="IsActive" class="form-select">
+            <option value="true">Active</option>
+            <option value="false">Inactive</option>
+        </select>
+    </div>
+
+    <button type="submit" class="btn btn-success">
+        Update @itemName
+    </button>
+
+    <a asp-action="Index"
+       asp-route-pageName="@Model.PageName"
+       class="btn btn-secondary">
+        Back
+    </a>
+
+</form>

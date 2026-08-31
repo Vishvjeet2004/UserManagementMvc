@@ -1,0 +1,64 @@
+﻿@model List<UserManagementMvc.Models.Securityquestionmaster>
+
+@{
+    ViewData["Title"] = "Manage Security Questions";
+}
+
+<h2>Manage Security Questions</h2>
+
+<a asp-action="Create" class="btn btn-success mb-3">
+    Add New Question
+</a>
+
+<a asp-controller="Dashboard"
+   asp-action="Index"
+   class="btn btn-secondary mb-3">
+    Back to Dashboard
+</a>
+
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Question</th>
+            <th>Status</th>
+            <th>Created By</th>
+            <th>Created At</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        @foreach (var q in Model)
+        {
+            <tr>
+                <td>@q.Id</td>
+                <td>@q.QuestionText</td>
+
+                <td>
+                    @if (q.IsActive == true)
+                    {
+                        <span class="badge bg-success">Active</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Inactive</span>
+                    }
+                </td>
+
+                <td>@q.CreatedByRole</td>
+                <td>@q.CreatedAt</td>
+
+                <td>
+                  
+
+                    <a asp-action="ToggleStatus"
+                       asp-route-id="@q.Id"
+                       class="btn btn-warning btn-sm">
+                        Active / Inactive
+                    </a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

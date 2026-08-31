@@ -1,0 +1,262 @@
+﻿@model List<UserManagementMvc.ViewModels.ChatMessageViewModel>
+
+@using Microsoft.AspNetCore.Http
+@using UserManagementMvc.Models
+
+@{
+    ViewData["Title"] = "Chat";
+
+    var currentUserId =
+        Context.Session.GetInt32("UserId") ?? 0;
+
+    var otherUser =
+        ViewBag.OtherUser
+        as UserManagementMvc.ViewModels.UserSearchViewModel;
+
+    var otherUserId =
+        ViewBag.OtherUserId;
+
+    var emojis =
+        ViewBag.Emojis
+        as List<ChatEmoji>
+        ?? new List<ChatEmoji>();
+}
+
+<link rel="stylesheet"
+      href="~/css/Emoji Management.css"
+      asp-append-version="true" />
+
+<div class="chat-page">
+
+    <div class="chat-header">
+
+        <a asp-controller="Messenger"
+           asp-action="Index"
+           class="back-button">
+            ←
+        </a>
+
+        <div class="chat-avatar">
+            @(otherUser?.Name?
+                .Substring(0, 1)
+                .ToUpper() ?? "?")
+        </div>
+
+        <div class="chat-user-info">
+
+            <div class="chat-user-name">
+                @otherUser?.Name
+            </div>
+
+            <div class="chat-user-status"
+                 id="onlineStatus">
+                @otherUser?.UserName
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="messages-container"
+         id="messagesContainer">
+
+        @if (Model.Count == 0)
+        {
+            <div class="empty-chat"
+                 id="emptyChat">
+
+                <div class="empty-chat-icon">
+                    💬
+                </div>
+
+                <h5>
+                    Start a conversation
+                </h5>
+
+                <p>
+                    Send a message to
+                    @otherUser?.Name
+                </p>
+
+            </div>
+        }
+
+        @foreach (var message in Model)
+        {
+            <div class="message-row
+                        @(message.IsMine
+                            ? "message-mine"
+                            : "message-theirs")"
+                 data-message-id="@message.Id">
+
+                <div class="message-bubble">
+
+                    @if (!string.IsNullOrWhiteSpace(message.MessageText))
+                    {
+                        <div class="message-text">
+                            @message.MessageText
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(message.AttachmentUrl))
+                    {
+                        @if (message.AttachmentContentType?
+                            .StartsWith("image/") == true)
+                        {
+                            <img src="@message.AttachmentUrl"
+                                 class="message-image"
+                                 alt="@message.AttachmentName"
+                                 loading="lazy" />
+                        }
+                        else if (message.AttachmentContentType?
+                            .StartsWith("video/") == true)
+                        {
+                            <video class="message-video"
+                                   controls>
+                                <source src="@message.AttachmentUrl"
+                                        type="@message.AttachmentContentType" />
+                            </video>
+                        }
+                        else
+                        {
+                            <a href="@message.AttachmentUrl"
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               class="message-file">
+
+                                <span class="message-file-icon">
+                                    📎
+                                </span>
+
+                                @message.AttachmentName
+
+                            </a>
+                        }
+                    }
+
+                    <div class="message-meta">
+
+                        <span>
+                            @message.SentAt
+                        </span>
+
+                        @if (message.IsMine)
+                        {
+                            <span class="message-ticks
+                                @(message.Status == "seen"
+                                    ? "ticks-seen"
+                                    : "")">
+
+                                @if (message.Status == "sent")
+                                {
+                                    <span>✓</span>
+                                }
+                                else
+                                {
+                                    <span>✓✓</span>
+                                }
+
+                            </span>
+                        }
+
+                    </div>
+
+                </div>
+
+            </div>
+        }
+
+    </div>
+
+
+    <div class="emoji-picker"
+         id="emojiPicker"
+         aria-hidden="true">
+
+        <div class="emoji-picker-grid"
+             id="emojiPickerGrid">
+
+            <div class="emoji-loading"
+                 id="emojiLoading">
+                Loading...
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="chat-composer">
+
+        <button type="button"
+                id="emojiButton"
+                class="emoji-button"
+                title="Emoji"
+                aria-label="Open emoji picker"
+                aria-expanded="false">
+
+            <span id="emojiButtonIcon">
+                😊
+            </span>
+
+        </button>
+
+
+        <button type="button"
+                id="attachmentButton"
+                class="attachment-button"
+                title="Attach file"
+                aria-label="Attach file">
+            📎
+        </button>
+
+
+        <form id="attachmentUploadForm"
+              asp-controller="Messenger"
+              asp-action="UploadAttachment"
+              method="post"
+              enctype="multipart/form-data"
+              class="d-none">
+
+            @Html.AntiForgeryToken()
+
+            <input type="file"
+                   id="attachmentInput"
+                   name="file"
+                   accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip" />
+
+        </form>
+
+
+        <input type="text"
+               id="messageInput"
+               class="message-input"
+               placeholder="Type a message..."
+               autocomplete="off" />
+
+
+        <button type="button"
+                id="sendMessageButton"
+                class="send-message-button"
+                title="Send message"
+                aria-label="Send message">
+            ➤
+        </button>
+
+    </div>
+
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@latest/dist/browser/signalr.min.js"></script>
+
+<script>
+    window.chatConfig = {
+        currentUserId: @currentUserId,
+        otherUserId: @otherUserId
+    };
+</script>
+
+<script src="~/js/Messenger.js"
+        asp-append-version="true"></script>

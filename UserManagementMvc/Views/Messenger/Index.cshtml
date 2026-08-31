@@ -1,0 +1,225 @@
+﻿@model UserManagementMvc.ViewModels.MessengerViewModel
+
+@using Microsoft.AspNetCore.Http
+
+@{
+    ViewData["Title"] = "Messenger";
+
+    var currentUserId =
+        Context.Session.GetInt32("UserId") ?? 0;
+}
+
+<div class="messenger-page">
+
+    <!-- 
+         MESSENGER HEADER
+          -->
+
+    <div class="messenger-header">
+
+        <!-- Back to Dashboard -->
+        <div class="messenger-back-area">
+
+            <a asp-controller="Dashboard"
+               asp-action="Index"
+               class="messenger-back-button">
+                ← Back to Dashboard
+            </a>
+
+        </div>
+
+
+        <!-- Messenger Title -->
+        <div class="messenger-title-area">
+
+            <h2>
+                💬 Messenger
+            </h2>
+
+            <p>
+                Connect with users inside your project
+            </p>
+
+        </div>
+
+
+        <!-- Notification Button -->
+        <div class="messenger-notification-area">
+
+            <button type="button"
+                    id="enableNotificationsButton"
+                    class="notification-button">
+
+                🔔 Enable Notifications
+
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- 
+         LIVE SEARCH
+          -->
+
+    <div class="user-search-box">
+
+        <div class="input-group">
+
+            <span class="input-group-text">
+                🔍
+            </span>
+
+            <input type="text"
+                   id="userSearchInput"
+                   class="form-control"
+                   placeholder="Search users by name, username or email..."
+                   autocomplete="off" />
+
+        </div>
+
+        <div class="search-hint">
+            Start typing to search instantly...
+        </div>
+
+    </div>
+
+
+    <!-- 
+         USER LIST
+          -->
+
+    <div class="user-list"
+         id="userList">
+
+        @if (Model.Users.Count == 0)
+        {
+            <div class="empty-users"
+                 id="emptyUsers">
+
+                <div class="empty-icon">
+                    👤
+                </div>
+
+                <h5>
+                    No users found
+                </h5>
+
+                <p>
+                    Try searching with another name
+                    or username.
+                </p>
+
+            </div>
+        }
+        else
+        {
+            foreach (var user in Model.Users)
+            {
+                <a asp-controller="Messenger"
+                   asp-action="Chat"
+                   asp-route-id="@user.Id"
+                   class="user-card">
+
+                    <!-- User Avatar -->
+                    <div class="user-avatar">
+
+                        @(user.Name
+                            .Substring(0, 1)
+                            .ToUpper())
+
+                    </div>
+
+
+                    <!-- User Information -->
+                    <div class="user-info">
+
+                        <div class="user-name">
+
+                            @user.Name
+
+                            @if (user.UnreadCount > 0)
+                            {
+                                <span class="unread-badge">
+                                    @user.UnreadCount
+                                </span>
+                            }
+
+                        </div>
+
+
+                        <div class="user-username">
+                            @@@user.UserName
+                        </div>
+
+
+                        @if (!string.IsNullOrWhiteSpace(
+                            user.LastMessage))
+                        {
+                            <div class="last-message">
+
+                                @user.LastMessage
+
+                            </div>
+                        }
+                        else if (
+                            !string.IsNullOrWhiteSpace(
+                                user.Department))
+                        {
+                            <div class="user-department">
+
+                                @user.Department
+
+                            </div>
+                        }
+
+                    </div>
+
+
+                    <!-- Right Side -->
+                    <div class="user-card-right">
+
+                        @if (!string.IsNullOrWhiteSpace(
+                            user.LastMessageAt))
+                        {
+                            <div class="last-message-time">
+
+                                @user.LastMessageAt
+
+                            </div>
+                        }
+
+                        <div class="chat-arrow">
+                            →
+                        </div>
+
+                    </div>
+
+                </a>
+            }
+        }
+
+    </div>
+
+</div>
+
+
+@section Scripts {
+
+    <script>
+
+        window.messengerConfig = {
+            currentUserId: @currentUserId
+        };
+
+    </script>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@latest/dist/browser/signalr.min.js"></script>
+
+
+    <script src="~/js/messenger-index.js"
+            asp-append-version="true"></script>
+
+}

@@ -1,0 +1,81 @@
+﻿@model UserManagementMvc.Models.Sitecontent
+
+@{
+    ViewData["Title"] = "Edit Site Content";
+}
+
+<h2>Edit Site Content</h2>
+
+@if (ViewBag.Error != null)
+{
+    <div class="alert alert-danger">
+        @ViewBag.Error
+    </div>
+}
+
+<form asp-action="Edit" method="post">
+
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="ContentKey" />
+    <input type="hidden" asp-for="CreatedAt" />
+
+    <div class="mb-3">
+        <label>Content Key</label>
+        <input asp-for="ContentKey"
+               class="form-control"
+               readonly />
+    </div>
+
+    @if (Model.ContentKey == "HomeTitle")
+    {
+        <div class="mb-3">
+            <label>Home Title</label>
+            <input asp-for="Title"
+                   class="form-control"
+                   placeholder="Example: User Management System" />
+        </div>
+
+        <input type="hidden" asp-for="Content" />
+    }
+    else if (Model.ContentKey == "HomeSubtitle")
+    {
+        <input type="hidden" asp-for="Title" />
+
+        <div class="mb-3">
+            <label>Home Subtitle</label>
+            <textarea asp-for="Content"
+                      class="form-control"
+                      rows="5"
+                      placeholder="Enter home subtitle"></textarea>
+        </div>
+    }
+    else if (Model.ContentKey == "HomeFooterNote")
+    {
+        <input type="hidden" asp-for="Title" />
+
+        <div class="mb-3">
+            <label>Home Footer Note</label>
+            <textarea asp-for="Content"
+                      class="form-control"
+                      rows="5"
+                      placeholder="Enter footer note"></textarea>
+        </div>
+    }
+
+    <div class="mb-3">
+        <label>Status</label>
+        <select asp-for="IsActive" class="form-select">
+            <option value="true">Active</option>
+            <option value="false">Inactive</option>
+        </select>
+    </div>
+
+    <button type="submit" class="btn btn-success">
+        Update
+    </button>
+
+    <a asp-action="Index" class="btn btn-secondary">
+        Back
+    </a>
+
+</form>

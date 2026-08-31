@@ -1,0 +1,266 @@
+﻿@model List<UserManagementMvc.Models.Sitecontentsection>
+
+@{
+    ViewData["Title"] = "Home";
+
+    string homeTitle =
+        ViewBag.HomeTitle ?? "User Management System";
+
+    string homeSubtitle =
+        ViewBag.HomeSubtitle
+        ?? "Manage users efficiently using ASP.NET Core MVC and MySQL Database.";
+
+    string homeFooterNote =
+        ViewBag.HomeFooterNote
+        ?? "Built with ASP.NET Core MVC, Entity Framework Core and MySQL.";
+}
+
+<style>
+    .home-page {
+        padding-top: 30px;
+        padding-bottom: 40px;
+    }
+
+    .home-header {
+        background: linear-gradient(135deg, #1f2937, #374151);
+        color: white;
+        border-radius: 16px;
+        padding: 55px 30px;
+        margin-bottom: 30px;
+        text-align: center;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    }
+
+        .home-header h1 {
+            font-weight: 700;
+            margin-bottom: 18px;
+        }
+
+        .home-header p {
+            max-width: 750px;
+            margin-left: auto;
+            margin-right: auto;
+            margin-bottom: 28px;
+            color: #d1d5db;
+            font-size: 18px;
+        }
+
+    .home-action-buttons {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .home-action-btn {
+        min-width: 130px;
+        border-radius: 9px;
+        padding: 10px 24px;
+        font-weight: 600;
+    }
+
+    .home-section {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+    }
+
+    .home-section-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .feature-card {
+        height: 100%;
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 22px;
+        transition: all 0.25s ease;
+    }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            background: #ffffff;
+            border-color: #cbd5e1;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.09);
+        }
+
+    .feature-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        background: #e5e7eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 23px;
+        margin-bottom: 16px;
+    }
+
+    .feature-card h3 {
+        font-size: 20px;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 10px;
+    }
+
+    .feature-card p {
+        color: #6b7280;
+        margin-bottom: 0;
+        line-height: 1.7;
+    }
+
+    .home-footer-box {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 18px;
+        text-align: center;
+        color: #6b7280;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+    }
+
+    @@media (max-width: 768px) {
+        .home-header {
+            padding: 38px 20px;
+        }
+
+            .home-header h1 {
+                font-size: 34px;
+            }
+
+            .home-header p {
+                font-size: 16px;
+            }
+
+        .home-action-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="container home-page">
+
+    @* Home page ka main header *@
+    <div class="home-header">
+
+        <h1 class="display-4">
+            @homeTitle
+        </h1>
+
+        <p>
+            @homeSubtitle
+        </p>
+
+        <div class="home-action-buttons">
+
+            <a asp-controller="UserAuth"
+               asp-action="Login"
+               class="btn btn-light home-action-btn">
+                Login
+            </a>
+
+            <a asp-controller="UserAuth"
+               asp-action="Register"
+               class="btn btn-outline-light home-action-btn">
+                Register
+            </a>
+
+        </div>
+
+    </div>
+
+    @* Home features ka section *@
+    <div class="home-section">
+
+        <div class="home-section-title">
+            System Features
+        </div>
+
+        @if (Model != null && Model.Any())
+        {
+            <div class="row g-4">
+
+                @{
+                    int featureNumber = 1;
+                }
+
+                @foreach (var item in Model)
+                {
+                    string featureIcon = "⚙️";
+
+                    if (featureNumber == 1)
+                    {
+                        featureIcon = "👥";
+                    }
+                    else if (featureNumber == 2)
+                    {
+                        featureIcon = "🔐";
+                    }
+                    else if (featureNumber == 3)
+                    {
+                        featureIcon = "📊";
+                    }
+                    else if (featureNumber == 4)
+                    {
+                        featureIcon = "🌐";
+                    }
+                    else if (featureNumber == 5)
+                    {
+                        featureIcon = "⚡";
+                    }
+                    else if (featureNumber == 6)
+                    {
+                        featureIcon = "🛡️";
+                    }
+
+                    <div class="col-md-6 col-lg-4">
+
+                        <div class="feature-card">
+
+                            <div class="feature-icon">
+                                @featureIcon
+                            </div>
+
+                            <h3>
+                                @item.SectionTitle
+                            </h3>
+
+                            <p>
+                                @item.SectionContent
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                    featureNumber++;
+                }
+
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-warning text-center mb-0">
+                No home features found.
+            </div>
+        }
+
+    </div>
+
+    @* Footer note *@
+    <div class="home-footer-box">
+        <small>
+            @homeFooterNote
+        </small>
+    </div>
+
+</div>

@@ -1,0 +1,238 @@
+﻿@using Microsoft.AspNetCore.Http
+
+@{
+    var userName =
+        Context.Session.GetString("UserName") ?? "User";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8" />
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0" />
+
+    <title>
+        @ViewData["Title"] - Mail
+    </title>
+
+    <link rel="stylesheet"
+          href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <link rel="stylesheet"
+          href="~/css/site.css"
+          asp-append-version="true" />
+
+    <link rel="stylesheet"
+          href="~/css/mail.css"
+          asp-append-version="true" />
+
+</head>
+
+<body>
+
+    <div class="mail-app">
+
+        <aside class="mail-sidebar">
+
+            <div class="mail-brand">
+
+                <button type="button"
+                        class="mail-menu-button"
+                        onclick="toggleMailSidebar()"
+                        aria-label="Toggle mail menu"
+                        title="Menu">
+                    ☰
+                </button>
+
+                <a asp-controller="Mail"
+                   asp-action="Inbox">
+
+                    <span class="mail-brand-icon">✉</span>
+
+                    <span class="mail-brand-text">
+                        Mail
+                    </span>
+
+                </a>
+
+            </div>
+
+            <a asp-controller="Mail"
+               asp-action="Compose"
+               class="mail-compose-button">
+
+                <span class="mail-compose-icon">
+                    ＋
+                </span>
+
+                <span class="mail-menu-text">
+                    Compose
+                </span>
+
+            </a>
+
+            <nav class="mail-nav">
+
+                <a asp-controller="Mail"
+                   asp-action="Sent"
+                   class="mail-nav-item">
+
+                    <span class="mail-nav-icon">
+                        📤
+                    </span>
+
+                    <span class="mail-menu-text">
+                        Sent
+                    </span>
+
+                </a>
+
+                <a asp-controller="Mail"
+                   asp-action="Inbox"
+                   class="mail-nav-item">
+
+                    <span class="mail-nav-icon">
+                        📥
+                    </span>
+
+                    <span class="mail-menu-text">
+                        Inbox
+                    </span>
+
+                </a>
+
+                <a asp-controller="Mail"
+                   asp-action="Starred"
+                   class="mail-nav-item">
+
+                    <span class="mail-nav-icon">
+                        ⭐
+                    </span>
+
+                    <span class="mail-menu-text">
+                        Starred
+                    </span>
+
+                </a>
+
+             
+
+                <a asp-controller="Mail"
+                   asp-action="Drafts"
+                   class="mail-nav-item">
+
+                    <span class="mail-nav-icon">
+                        📝
+                    </span>
+
+                    <span class="mail-menu-text">
+                        Drafts
+                    </span>
+
+                </a>
+
+                <a asp-controller="Mail"
+                   asp-action="Trash"
+                   class="mail-nav-item">
+
+                    <span class="mail-nav-icon">
+                        🗑️
+                    </span>
+
+                    <span class="mail-menu-text">
+                        Trash
+                    </span>
+
+                </a>
+
+            </nav>
+
+            <div class="mail-sidebar-bottom">
+
+                <a asp-controller="Dashboard"
+                   asp-action="Index"
+                   class="mail-nav-item">
+
+                    <span class="mail-nav-icon">
+                        ←
+                    </span>
+
+                    <span class="mail-menu-text">
+                        Dashboard
+                    </span>
+
+                </a>
+
+                <a asp-controller="Auth"
+                   asp-action="Logout"
+                   class="mail-nav-item mail-logout">
+
+                    <span class="mail-nav-icon">
+                        ↪
+                    </span>
+
+                    <span class="mail-menu-text">
+                        Logout
+                    </span>
+
+                </a>
+
+            </div>
+
+        </aside>
+
+        <main class="mail-main">
+
+            <header class="mail-topbar">
+
+                <div class="mail-user">
+
+                    <span class="mail-user-icon">
+                        👤
+                    </span>
+
+                    <span>
+                        @userName
+                    </span>
+
+                </div>
+
+            </header>
+
+            <div class="mail-content">
+
+                @RenderBody()
+
+            </div>
+
+        </main>
+
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+
+            function toggleMailSidebar() {
+
+                document
+                    .querySelector(".mail-app")
+                    .classList.toggle("mail-sidebar-collapsed");
+
+            }
+
+    </script>
+
+    @await RenderSectionAsync(
+        "Scripts",
+        required: false)
+
+</body>
+
+</html>

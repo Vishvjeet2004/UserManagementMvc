@@ -1,0 +1,139 @@
+﻿@model UserManagementMvc.ViewModels.MailComposeViewModel
+
+@{
+    ViewData["Title"] = Model.DraftId.HasValue
+        ? "Edit Draft"
+        : "Compose Mail";
+}
+
+<div class="mail-compose-page">
+
+    <div class="mail-compose-header">
+
+        <div>
+            <h2>
+                @(Model.DraftId.HasValue ? "Edit Draft" : "New Message")
+            </h2>
+
+            <p>
+                @(Model.DraftId.HasValue
+                    ? "Continue editing your saved message."
+                    : "Write and send a new message.")
+            </p>
+        </div>
+
+    </div>
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger">
+            @Html.ValidationSummary()
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">
+            @TempData["Error"]
+        </div>
+    }
+
+    <form asp-controller="Mail"
+          asp-action="Compose"
+          method="post"
+          class="mail-compose-card">
+
+        @Html.AntiForgeryToken()
+
+        <input asp-for="DraftId" type="hidden" />
+
+        <div class="mail-compose-field">
+
+            <label asp-for="RecipientEmail">
+                To
+            </label>
+
+            <input asp-for="RecipientEmail"
+                   class="form-control"
+                   type="email"
+                   placeholder="recipient@example.com" />
+
+            <span asp-validation-for="RecipientEmail"
+                  class="text-danger">
+            </span>
+
+        </div>
+
+        <div class="mail-compose-field">
+
+            <label asp-for="Subject">
+                Subject
+            </label>
+
+            <input asp-for="Subject"
+                   class="form-control"
+                   placeholder="Subject" />
+
+            <span asp-validation-for="Subject"
+                  class="text-danger">
+            </span>
+
+        </div>
+
+        <div class="mail-compose-field">
+
+            <label asp-for="Body">
+                Message
+            </label>
+
+            <textarea asp-for="Body"
+                      class="form-control mail-message-editor"
+                      rows="14"
+                      placeholder="Write your message..."></textarea>
+
+            <span asp-validation-for="Body"
+                  class="text-danger">
+            </span>
+
+        </div>
+
+        <div class="mail-compose-footer">
+
+            @if (Model.DraftId.HasValue)
+            {
+                <button type="submit"
+                        formaction="@Url.Action("SendDraft", "Mail", new { id = Model.DraftId })"
+                        class="mail-primary-button">
+                    Send
+                </button>
+            }
+            else
+            {
+                <button type="submit"
+                        class="mail-primary-button">
+                    Send
+                </button>
+            }
+
+            <button type="submit"
+                    formaction="@Url.Action("SaveDraft", "Mail")"
+                    class="mail-secondary-button">
+                Save Draft
+            </button>
+
+            <a asp-controller="Mail"
+               asp-action="Inbox"
+               class="mail-secondary-button">
+                Cancel
+            </a>
+
+        </div>
+
+    </form>
+
+</div>
+
+@section Scripts
+{
+    <partial name="_ValidationScriptsPartial" />
+}

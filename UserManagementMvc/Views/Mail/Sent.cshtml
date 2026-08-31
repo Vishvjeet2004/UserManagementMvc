@@ -1,0 +1,109 @@
+﻿@model List<UserManagementMvc.Models.MailMessage>
+
+@{
+    ViewData["Title"] = "Sent";
+}
+
+<div class="mail-page">
+
+    <div class="mail-page-header">
+
+        <div>
+            <h2>Sent</h2>
+            <p>Messages you have sent.</p>
+        </div>
+
+        <a asp-controller="Mail"
+           asp-action="Compose"
+           class="mail-primary-button">
+            + Compose
+        </a>
+
+    </div>
+
+    <div class="mail-list">
+
+        @if (Model.Count == 0)
+        {
+            <div class="mail-empty">
+                <div class="mail-empty-icon">↗</div>
+                <h4>No sent messages</h4>
+                <p>Messages you send will appear here.</p>
+            </div>
+        }
+        else
+        {
+            @foreach (var mail in Model)
+            {
+                <div class="mail-row">
+
+                    <div class="mail-star">
+
+                        <form asp-controller="Mail"
+                              asp-action="ToggleStarFromList"
+                              method="post">
+
+                            @Html.AntiForgeryToken()
+
+                            <input type="hidden"
+                                   name="id"
+                                   value="@mail.Id" />
+
+                            <input type="hidden"
+                                   name="returnAction"
+                                   value="Sent" />
+
+                            <button type="submit"
+                                    class="mail-star-button @(mail.IsStarred ? "active" : "")">
+                                @(mail.IsStarred ? "★" : "☆")
+                            </button>
+
+                        </form>
+
+                    </div>
+
+                    <a asp-controller="Mail"
+                       asp-action="Details"
+                       asp-route-id="@mail.Id"
+                       class="mail-row-content">
+
+                        <div class="mail-row-main">
+
+                            <div class="mail-row-sender">
+                                To: @mail.RecipientEmail
+                            </div>
+
+                            <div class="mail-row-subject">
+                                @mail.Subject
+                            </div>
+
+                            <div class="mail-row-preview">
+                                @mail.Body
+                            </div>
+
+                        </div>
+
+                        <div class="mail-row-date">
+                            @mail.SentAt.ToString("dd MMM yyyy")
+                        </div>
+
+                    </a>
+
+                    <div class="mail-row-actions">
+
+                        <a asp-controller="Mail"
+                           asp-action="DeleteSent"
+                           asp-route-id="@mail.Id"
+                           class="mail-action-button danger">
+                            Delete
+                        </a>
+
+                    </div>
+
+                </div>
+            }
+        }
+
+    </div>
+
+</div>

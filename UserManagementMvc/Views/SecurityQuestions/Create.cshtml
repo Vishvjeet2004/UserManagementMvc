@@ -1,0 +1,33 @@
+﻿@model UserManagementMvc.Models.Securityquestionmaster
+
+@{
+    ViewData["Title"] = "Add Security Question";
+}
+
+<h2>Add Security Question</h2>
+
+@if (ViewBag.Error != null)
+{
+    <div class="alert alert-danger">
+        @ViewBag.Error
+    </div>
+}
+
+<form asp-action="Create" method="post">
+
+    <div class="mb-3">
+        <label>Question Text</label>
+        <input asp-for="QuestionText"
+               class="form-control"
+               placeholder="Enter security question" />
+    </div>
+
+    <button type="submit" class="btn btn-success">
+        Save
+    </button>
+
+    <a asp-action="Index" class="btn btn-secondary">
+        Back
+    </a>
+
+</form>

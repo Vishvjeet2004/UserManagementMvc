@@ -1,0 +1,201 @@
+﻿@model List<UserManagementMvc.Models.Sitecontentsection>
+
+@{
+    ViewData["Title"] = "Privacy";
+
+    string privacyTitle =
+        ViewBag.PrivacyTitle ?? "Privacy Policy";
+
+    string privacyIntro =
+        ViewBag.PrivacyIntro
+        ?? "Read our privacy policy and understand how your information is collected, stored and protected.";
+}
+
+<style>
+
+    .page-header {
+        background: linear-gradient(135deg,#1f2937,#374151);
+        color: white;
+        border-radius: 16px;
+        padding: 50px 30px;
+        margin-bottom: 30px;
+        text-align: center;
+        box-shadow: 0 8px 24px rgba(0,0,0,.12);
+    }
+
+        .page-header h1 {
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        .page-header p {
+            color: #d1d5db;
+            max-width: 750px;
+            margin: auto;
+            font-size: 18px;
+        }
+
+    .content-section {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 25px;
+        box-shadow: 0 6px 18px rgba(0,0,0,.05);
+    }
+
+    .section-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 20px;
+        border-bottom: 1px solid #e5e7eb;
+        padding-bottom: 10px;
+    }
+
+    .privacy-card {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 22px;
+        height: 100%;
+        transition: .25s;
+    }
+
+        .privacy-card:hover {
+            transform: translateY(-5px);
+            background: #fff;
+            box-shadow: 0 10px 24px rgba(0,0,0,.08);
+            border-color: #cbd5e1;
+        }
+
+    .privacy-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        background: #e5e7eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        margin-bottom: 15px;
+    }
+
+    .privacy-card h4 {
+        font-weight: 700;
+        color: #111827;
+    }
+
+    .privacy-card p {
+        color: #6b7280;
+        white-space: pre-line;
+        margin-bottom: 0;
+    }
+
+    .back-btn {
+        border-radius: 8px;
+        min-width: 130px;
+    }
+
+</style>
+
+<div class="container mt-4 mb-5">
+
+    <!-- Page Header -->
+
+    <div class="page-header">
+
+        <h1>
+            @privacyTitle
+        </h1>
+
+        <p>
+            @privacyIntro
+        </p>
+
+    </div>
+
+    <!-- Privacy Sections -->
+
+    <div class="content-section">
+
+        <div class="section-title">
+            Privacy Information
+        </div>
+
+        @if (Model != null && Model.Any())
+        {
+            <div class="row g-4">
+
+                @{
+                    int number = 1;
+                }
+
+                @foreach (var privacySection in Model)
+                {
+                    string icon = "🔒";
+
+                    if (number == 2)
+                    {
+                        icon = "🛡️";
+                    }
+                    else if (number == 3)
+                    {
+                        icon = "📄";
+                    }
+                    else if (number == 4)
+                    {
+                        icon = "🔐";
+                    }
+                    else if (number == 5)
+                    {
+                        icon = "⚖️";
+                    }
+
+                    <div class="col-md-6 col-lg-4">
+
+                        <div class="privacy-card">
+
+                            <div class="privacy-icon">
+                                @icon
+                            </div>
+
+                            <h4>
+                                @privacySection.SectionTitle
+                            </h4>
+
+                            <p>
+                                @privacySection.SectionContent
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                    number++;
+                }
+
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-warning text-center mb-0">
+                No privacy information available.
+            </div>
+        }
+
+    </div>
+
+    <div class="text-center">
+
+        <a asp-controller="Home"
+           asp-action="Index"
+           class="btn btn-outline-dark back-btn">
+
+            Back
+
+        </a>
+
+    </div>
+
+</div>

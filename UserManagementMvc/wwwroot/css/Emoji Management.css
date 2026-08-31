@@ -1,0 +1,137 @@
+﻿/*  
+   Emoji Picker
+     */
+
+.emoji-picker {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 72px;
+    z-index: 1000;
+    display: none;
+    padding: 12px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+}
+
+    .emoji-picker[aria-hidden="false"] {
+        display: block;
+    }
+
+.emoji-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+    gap: 8px;
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 4px;
+}
+
+    /* Emoji button */
+    .emoji-picker-grid button,
+    .emoji-picker-grid .emoji-item {
+        width: 52px;
+        height: 52px;
+        min-width: 52px;
+        min-height: 52px;
+        padding: 0;
+        margin: 0;
+        border: 0;
+        border-radius: 10px;
+        background: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+        font-size: 28px;
+        line-height: 1;
+        text-align: center;
+        transition: background-color 0.15s ease, transform 0.15s ease;
+    }
+
+        .emoji-picker-grid button:hover,
+        .emoji-picker-grid .emoji-item:hover {
+            background: #f3f4f6;
+            transform: scale(1.08);
+        }
+
+        .emoji-picker-grid button:active,
+        .emoji-picker-grid .emoji-item:active {
+            transform: scale(0.96);
+        }
+
+        /* Emoji text inside dynamically generated buttons */
+        .emoji-picker-grid button span,
+        .emoji-picker-grid .emoji-item span {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+            font-size: 28px;
+            line-height: 1;
+        }
+
+/* Loading message */
+.emoji-loading {
+    grid-column: 1 / -1;
+    width: 100%;
+    padding: 20px;
+    text-align: center;
+    color: #6b7280;
+    font-size: 14px;
+}
+
+/* Empty emoji message */
+.emoji-empty {
+    grid-column: 1 / -1;
+    width: 100%;
+    padding: 20px;
+    text-align: center;
+    color: #6b7280;
+    font-size: 14px;
+}
+
+/* Scrollbar */
+.emoji-picker-grid::-webkit-scrollbar {
+    width: 6px;
+}
+
+.emoji-picker-grid::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.emoji-picker-grid::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 10px;
+}
+
+/* Mobile */
+@media (max-width: 576px) {
+
+    .emoji-picker {
+        bottom: 68px;
+        padding: 10px;
+    }
+
+    .emoji-picker-grid {
+        grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+        gap: 6px;
+    }
+
+        .emoji-picker-grid button,
+        .emoji-picker-grid .emoji-item {
+            width: 48px;
+            height: 48px;
+            min-width: 48px;
+            min-height: 48px;
+            font-size: 26px;
+        }
+
+            .emoji-picker-grid button span,
+            .emoji-picker-grid .emoji-item span {
+                font-size: 26px;
+            }
+}

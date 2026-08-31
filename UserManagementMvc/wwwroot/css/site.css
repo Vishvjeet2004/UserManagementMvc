@@ -1,0 +1,399 @@
+/* 
+   BASIC SITE STYLES
+    */
+
+html {
+    font-size: 14px;
+}
+
+@media (min-width: 768px) {
+    html {
+        font-size: 16px;
+    }
+}
+
+.btn:focus,
+.btn:active:focus,
+.btn-link.nav-link:focus,
+.form-control:focus,
+.form-check-input:focus {
+    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+    position: relative;
+    min-height: 100%;
+}
+
+body {
+    margin-bottom: 60px;
+}
+
+.form-floating > .form-control-plaintext::placeholder,
+.form-floating > .form-control::placeholder {
+    color: var(--bs-secondary-color);
+    text-align: end;
+}
+
+.form-floating > .form-control-plaintext:focus::placeholder,
+.form-floating > .form-control:focus::placeholder {
+    text-align: start;
+}
+
+
+/* 
+   MESSENGER PAGE
+    */
+
+.messenger-page {
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px 0 40px 0;
+}
+
+
+/* 
+   MESSENGER HEADER
+    */
+
+.messenger-header {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 15px;
+    padding: 20px;
+    margin-bottom: 20px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+}
+
+
+/* 
+   BACK TO DASHBOARD
+    */
+
+.messenger-back-area {
+    width: 100%;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.messenger-back-button {
+    display: inline-block;
+    padding: 8px 16px;
+    background: #0d6efd;
+    color: #ffffff !important;
+    border: 1px solid #0d6efd;
+    border-radius: 8px;
+    text-decoration: none !important;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+    .messenger-back-button:hover {
+        background: #0b5ed7;
+        border-color: #0b5ed7;
+        color: #ffffff !important;
+        transform: translateY(-1px);
+    }
+
+
+/* 
+   MESSENGER TITLE
+    */
+
+.messenger-title-area {
+    flex: 1;
+    min-width: 250px;
+}
+
+    .messenger-title-area h2 {
+        margin: 0;
+        font-size: 28px;
+        font-weight: 700;
+    }
+
+    .messenger-title-area p {
+        margin: 5px 0 0 0;
+        color: white;
+        font-size: 14px;
+    }
+
+
+/* 
+   NOTIFICATION BUTTON
+    */
+
+.messenger-notification-area {
+    margin-left: auto;
+}
+
+.notification-button {
+    padding: 9px 15px;
+    border: 1px solid #0d6efd;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #0d6efd;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+    .notification-button:hover {
+        background: #0d6efd;
+        color: #ffffff;
+    }
+
+
+/* 
+   USER SEARCH BOX
+    */
+
+.user-search-box {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+    .user-search-box .input-group {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .user-search-box .input-group-text {
+        background: #ffffff;
+        border-right: 0;
+    }
+
+    .user-search-box .form-control {
+        border-left: 0;
+        min-height: 45px;
+    }
+
+.search-hint {
+    margin-top: 6px;
+    margin-left: 4px;
+    color: #6c757d;
+    font-size: 13px;
+}
+
+
+/* 
+   USER LIST
+    */
+
+.user-list {
+    width: 100%;
+}
+
+
+/* 
+   USER CARD
+    */
+
+.user-card {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    text-decoration: none !important;
+    color: inherit !important;
+    transition: all 0.2s ease;
+}
+
+    .user-card:hover {
+        border-color: #0d6efd;
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.10);
+        transform: translateY(-1px);
+    }
+
+
+/* 
+   USER AVATAR
+    */
+
+.user-avatar {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 14px;
+    border-radius: 50%;
+    background: #0d6efd;
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+
+/* 
+   USER INFORMATION
+    */
+
+.user-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.user-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.user-username {
+    margin-top: 2px;
+    color: #6c757d;
+    font-size: 13px;
+}
+
+.last-message {
+    margin-top: 4px;
+    color: #495057;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-department {
+    margin-top: 4px;
+    color: #6c757d;
+    font-size: 13px;
+}
+
+
+/* 
+   UNREAD MESSAGE BADGE
+    */
+
+.unread-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: 50px;
+    background: #dc3545;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+
+/* 
+   RIGHT SIDE OF USER CARD
+    */
+
+.user-card-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    margin-left: 15px;
+}
+
+.last-message-time {
+    color: #6c757d;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.chat-arrow {
+    margin-top: 5px;
+    color: #0d6efd;
+    font-size: 20px;
+}
+
+
+/* 
+   EMPTY USER LIST
+    */
+
+.empty-users {
+    text-align: center;
+    padding: 50px 20px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+}
+
+.empty-icon {
+    font-size: 40px;
+    margin-bottom: 10px;
+}
+
+.empty-users h5 {
+    margin-bottom: 5px;
+}
+
+.empty-users p {
+    margin: 0;
+    color: #6c757d;
+}
+
+
+/* 
+   MOBILE RESPONSIVE
+    */
+
+@media (max-width: 767px) {
+
+    .messenger-page {
+        padding: 10px 0 30px 0;
+    }
+
+    .messenger-header {
+        padding: 15px;
+    }
+
+    .messenger-title-area {
+        width: 100%;
+        flex: none;
+    }
+
+        .messenger-title-area h2 {
+            font-size: 24px;
+        }
+
+    .messenger-notification-area {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    .notification-button {
+        width: 100%;
+    }
+
+    .user-card {
+        padding: 12px;
+    }
+
+    .user-avatar {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+        margin-right: 10px;
+    }
+
+    .user-card-right {
+        margin-left: 8px;
+    }
+
+    .last-message-time {
+        font-size: 11px;
+    }
+}

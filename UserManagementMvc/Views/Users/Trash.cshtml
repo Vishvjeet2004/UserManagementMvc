@@ -1,0 +1,172 @@
+﻿@model List<UserManagementMvc.Models.User>
+
+@{
+    ViewData["Title"] = "Trash";
+}
+
+<h2>Trash Users</h2>
+
+<a href="/Users/Index" class="btn btn-secondary">
+    ← Back to User List
+</a>
+
+<br />
+<br />
+
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Name</th>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Mobile</th>
+            <th>Role</th>
+            <th>Department</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        @foreach (var user in Model)
+        {
+            <tr>
+                <td>@user.Id</td>
+                <td>@user.Name</td>
+                <td>@user.UserName</td>
+                <td>@user.Email</td>
+                <td>@user.MobileCountryCode @user.Mobile</td>
+                <td>@user.Role</td>
+                <td>@user.Department</td>
+
+                <td>
+                    <!-- Restore button: modal open karega, direct action nahi chalega -->
+                    <button type="button"
+                            class="btn btn-success btn-sm"
+                            data-bs-toggle="modal"
+                            data-bs-target="#restoreModal"
+                            data-user-id="@user.Id"
+                            data-user-name="@user.Name">
+                        Restore
+                    </button>
+
+                    <!-- Permanent delete button: modal open karega -->
+                    <button type="button"
+                            class="btn btn-danger btn-sm"
+                            data-bs-toggle="modal"
+                            data-bs-target="#deleteModal"
+                            data-user-id="@user.Id"
+                            data-user-name="@user.Name">
+                        Permanent Delete
+                    </button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<!-- Restore Confirmation Modal -->
+<div class="modal fade" id="restoreModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <h5 class="modal-title">Restore User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="modal-body">
+                Are you sure you want to restore
+                <b id="restoreUserName"></b>?
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer">
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    Cancel
+                </button>
+
+                <a id="restoreConfirmBtn"
+                   class="btn btn-success">
+                    Restore
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Permanent Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <h5 class="modal-title text-danger">Permanent Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="modal-body">
+                <p>
+                    Are you sure you want to permanently delete
+                    <b id="deleteUserName"></b>?
+                </p>
+
+                <p class="text-danger">
+                    This action cannot be undone.
+                </p>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer">
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    Cancel
+                </button>
+
+                <a id="deleteConfirmBtn"
+                   class="btn btn-danger">
+                    Delete Permanently
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Restore modal ke liye selected user ka data set karta hai
+        var restoreModal = document.getElementById('restoreModal');
+
+        restoreModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+
+            var userId = button.getAttribute('data-user-id');
+            var userName = button.getAttribute('data-user-name');
+
+            document.getElementById('restoreUserName').innerText = userName;
+            document.getElementById('restoreConfirmBtn').href = '/Users/Restore/' + userId;
+        });
+
+        // Permanent delete modal ke liye selected user ka data set karta hai
+        var deleteModal = document.getElementById('deleteModal');
+
+        deleteModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+
+            var userId = button.getAttribute('data-user-id');
+            var userName = button.getAttribute('data-user-name');
+
+            document.getElementById('deleteUserName').innerText = userName;
+            document.getElementById('deleteConfirmBtn').href = '/Users/PermanentDelete/' + userId;
+        });
+    </script>
+}

@@ -1,0 +1,150 @@
+﻿@model List<UserManagementMvc.Models.User>
+
+@{
+    ViewData["Title"] = "Blocked Accounts";
+}
+
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+
+        <div>
+            <h2 class="fw-bold mb-1">
+                Blocked Accounts
+            </h2>
+
+            <p class="text-muted mb-0">
+                Accounts blocked after three failed login attempts.
+            </p>
+        </div>
+
+        <a asp-controller="Dashboard"
+           asp-action="Index"
+           class="btn btn-secondary">
+            Back
+        </a>
+
+    </div>
+
+    @* Account unblock hone ke baad success message *@
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["Success"]
+        </div>
+    }
+
+    @* Kisi action me error aane par message *@
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">
+            @TempData["Error"]
+        </div>
+    }
+
+    @if (Model != null && Model.Any())
+    {
+        <div class="table-responsive">
+
+            <table class="table table-bordered table-striped align-middle">
+
+                <thead class="table-dark">
+                    <tr>
+                        <th>Name</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Department</th>
+                        <th class="text-center">
+                            Failed Attempts
+                        </th>
+                        <th>Blocked At</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    @foreach (var user in Model)
+                    {
+                        <tr>
+
+                            <td>
+                                @user.Name
+                            </td>
+
+                            <td>
+                                @user.UserName
+                            </td>
+
+                            <td>
+                                @user.Email
+                            </td>
+
+                            <td>
+                                <span class="badge bg-secondary">
+                                    @user.Role
+                                </span>
+                            </td>
+
+                            <td>
+                                @user.Department
+                            </td>
+
+                            <td class="text-center">
+                                <span class="badge bg-danger">
+                                    @user.FailedLoginAttempts
+                                </span>
+                            </td>
+
+                            <td>
+                                @if (user.BlockedAt.HasValue)
+                                {
+                                    <span>
+                                        @user.BlockedAt.Value.ToString("dd-MMM-yyyy hh:mm tt")
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span>-</span>
+                                }
+                            </td>
+
+                            <td>
+                                @* Unblock request POST method se jayegi *@
+                                <form asp-controller="Users"
+                                      asp-action="UnblockAccount"
+                                      method="post"
+                                      onsubmit="return confirm('Are you sure you want to unblock this account?');">
+
+                                    @Html.AntiForgeryToken()
+
+                                    <input type="hidden"
+                                           name="id"
+                                           value="@user.Id" />
+
+                                    <button type="submit"
+                                            class="btn btn-success btn-sm">
+                                        Unblock
+                                    </button>
+
+                                </form>
+                            </td>
+
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info text-center">
+            No blocked accounts were found.
+        </div>
+    }
+
+</div>

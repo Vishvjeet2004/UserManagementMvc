@@ -1,0 +1,100 @@
+﻿@model List<UserManagementMvc.Models.Sitecontent>
+
+@{
+    ViewData["Title"] = "Manage Site Content";
+}
+
+<h2>Manage Site Content</h2>
+
+<p class="text-muted">
+    This page is only for fixed Home page content like Home Title, Home Subtitle and Footer Note.
+</p>
+
+<div class="alert alert-info">
+    <b>Important:</b>
+    <b>Manage Home Features</b>.
+</div>
+
+<a asp-controller="Dashboard"
+   asp-action="Index"
+   class="btn btn-secondary mb-3">
+    Back to Dashboard
+</a>
+
+<table class="table table-bordered table-striped align-middle">
+    <thead>
+        <tr>
+            <th style="width:180px;">Content Key</th>
+            <th style="width:180px;">Used Field</th>
+            <th>Current Value</th>
+            <th style="width:100px;">Status</th>
+            <th style="width:150px;">Updated At</th>
+            <th style="width:100px;">Action</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        @foreach (var item in Model)
+        {
+            string usedField = "";
+            string currentValue = "";
+
+            if (item.ContentKey == "HomeTitle")
+            {
+                usedField = "Title";
+                currentValue = item.Title ?? "";
+            }
+            else if (item.ContentKey == "HomeSubtitle")
+            {
+                usedField = "Content";
+                currentValue = item.Content ?? "";
+            }
+            else if (item.ContentKey == "HomeFooterNote")
+            {
+                usedField = "Content";
+                currentValue = item.Content ?? "";
+            }
+
+            <tr>
+                <td>
+                    <b>@item.ContentKey</b>
+                </td>
+
+                <td>
+                    <span class="badge bg-primary">
+                        @usedField
+                    </span>
+                </td>
+
+                <td>
+                    <div style="white-space:pre-line; max-width:650px;">
+                        @currentValue
+                    </div>
+                </td>
+
+                <td>
+                    @if (item.IsActive == true)
+                    {
+                        <span class="badge bg-success">Active</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Inactive</span>
+                    }
+                </td>
+
+                <td>
+                    @item.UpdatedAt
+                </td>
+
+                <td>
+                    <a asp-action="Edit"
+                       asp-route-id="@item.Id"
+                       class="btn btn-primary btn-sm">
+                        Edit
+                    </a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

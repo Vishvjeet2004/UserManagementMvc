@@ -1,0 +1,118 @@
+﻿@model UserManagementMvc.Models.User
+
+@{
+    ViewData["Title"] = "Add User";
+}
+
+<h2>Add User</h2>
+
+@if (ViewBag.Error != null)
+{
+    <p style="color:red">@ViewBag.Error</p>
+}
+
+<form asp-action="Create" method="post" autocomplete="off">
+
+    <!-- Basic user details -->
+    <div class="mb-3">
+        <label>Name</label>
+        <input asp-for="Name"
+               class="form-control"
+               placeholder="Enter full name" />
+    </div>
+
+    <div class="mb-3">
+        <label>Username</label>
+        <input asp-for="UserName"
+               class="form-control"
+               placeholder="Optional username" />
+        <small class="text-muted">
+            Leave blank to auto-generate username.
+        </small>
+    </div>
+
+    <div class="mb-3">
+        <label>Email</label>
+        <input asp-for="Email"
+               class="form-control"
+               autocomplete="off"
+               placeholder="Enter email address" />
+    </div>
+
+    <div class="mb-3">
+        <label>Mobile</label>
+        <input asp-for="Mobile"
+               class="form-control"
+               placeholder="Enter mobile number" />
+    </div>
+
+    <!-- Password will be stored as PasswordHash in database -->
+    <div class="mb-3">
+        <label>Password</label>
+        <input name="Password"
+               type="password"
+               class="form-control"
+               autocomplete="new-password"
+               placeholder="Enter password" />
+    </div>
+
+    <!-- Admin can decide role while adding user -->
+    @if (ViewBag.IsSuperAdmin == true)
+    {
+        <div class="mb-3">
+            <label class="form-label">Role</label>
+
+            <select asp-for="Role" class="form-control">
+                <option value="User">User</option>
+                <option value="Admin">Admin</option>
+                <option value="SuperAdmin">SuperAdmin</option>
+            </select>
+        </div>
+    }
+    else
+    {
+        <input type="hidden" asp-for="Role" value="User" />
+
+        <div class="mb-3">
+            <label class="form-label">Role</label>
+            <input class="form-control" value="User" readonly />
+            <small class="text-muted">
+                Only Super Admin can decide user role.
+            </small>
+        </div>
+    }
+
+    <!-- Department helps to categorize users professionally -->
+    <div class="mb-3">
+        <label>Department</label>
+        <select asp-for="Department" class="form-control">
+            <option value="General">General</option>
+            <option value="Finance">Finance</option>
+            <option value="Sales">Sales</option>
+            <option value="Backend Developer">Backend Developer</option>
+            <option value="Frontend Developer">Frontend Developer</option>
+            <option value="Full Stack Developer">Full Stack Developer</option>
+            <option value="HR">HR</option>
+            <option value="Support">Support</option>
+        </select>
+    </div>
+
+    <!-- User Status -->
+    <div class="mb-3">
+        <label>User Status</label>
+
+        <select asp-for="IsActive" class="form-control">
+            <option value="true">Active</option>
+            <option value="false">Inactive</option>
+        </select>
+    </div>
+
+    <button type="submit" class="btn btn-success">
+        Save User
+    </button>
+
+    <a href="/Users/Index" class="btn btn-secondary">
+        ← Back
+    </a>
+
+</form>

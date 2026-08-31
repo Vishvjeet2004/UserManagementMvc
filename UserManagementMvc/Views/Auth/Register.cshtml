@@ -1,0 +1,1170 @@
+﻿@model UserManagementMvc.Models.User
+
+@{
+    ViewData["Title"] = "Register";
+
+    var questions =
+        ViewBag.SecurityQuestionMasters
+        as List<UserManagementMvc.Models.Securityquestionmaster>;
+}
+
+<style>
+    .register-box {
+        max-width: 850px;
+        margin: 40px auto;
+    }
+
+    .page-title {
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .custom-question-box {
+        display: none;
+    }
+
+    .country-code-select {
+        max-width: 95px;
+        flex: 0 0 95px;
+    }
+
+    .security-card {
+        background: #fafafa;
+    }
+
+    .field-message {
+        display: none;
+        margin-top: 6px;
+        font-size: 14px;
+    }
+
+        .field-message.error {
+            display: block;
+            color: #dc3545;
+        }
+
+        .field-message.success {
+            display: block;
+            color: #198754;
+        }
+
+        .field-message.checking {
+            display: block;
+            color: #6c757d;
+        }
+</style>
+
+<div class="container">
+
+    <div class="register-box">
+
+        <h2 class="page-title">
+            Register
+        </h2>
+
+        <hr />
+
+        @if (ViewBag.Error != null)
+        {
+            <div class="alert alert-danger">
+                @ViewBag.Error
+            </div>
+        }
+
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger">
+                @TempData["Error"]
+            </div>
+        }
+
+        <form asp-controller="UserAuth"
+              asp-action="Register"
+              method="post"
+              id="registerForm"
+              autocomplete="off">
+
+            @Html.AntiForgeryToken()
+
+            <div class="row">
+
+                <div class="col-md-6 mb-3">
+
+                    <label class="form-label">
+                        Name
+                    </label>
+
+                    <input asp-for="Name"
+                           class="form-control"
+                           placeholder="Enter full name"
+                           autocomplete="off"
+                           required />
+
+                </div>
+
+                <div class="col-md-6 mb-3">
+
+                    <label class="form-label">
+                        Username
+                    </label>
+
+                    <input asp-for="UserName"
+                           class="form-control"
+                           placeholder="Enter username"
+                           autocomplete="off" />
+
+                    <small class="text-muted">
+                        Leave blank if you want the system to generate a username.
+                    </small>
+
+                </div>
+
+                <div class="col-md-6 mb-3">
+
+                    <label class="form-label">
+                        Email
+                    </label>
+
+                    <input asp-for="Email"
+                           type="email"
+                           id="emailInput"
+                           class="form-control"
+                           placeholder="Enter a valid email address"
+                           autocomplete="email"
+                           required />
+
+                    <div id="emailMessage"
+                         class="field-message">
+                    </div>
+
+                    <small class="text-muted d-block mt-1">
+                        A verification OTP will be sent to this email.
+                    </small>
+
+                </div>
+
+                <div class="col-md-6 mb-3">
+
+                    <label class="form-label">
+                        Mobile Number
+                    </label>
+
+                    <div class="input-group">
+
+                        <select asp-for="MobileCountryCode"
+                                id="countryCode"
+                                class="form-select country-code-select">
+
+                            <option value="+91">+91</option>
+                            <option value="+1">+1</option>
+                            <option value="+44">+44</option>
+                            <option value="+977">+977</option>
+                            <option value="+971">+971</option>
+                            <option value="+92">+92</option>
+                            <option value="+880">+880</option>
+
+                        </select>
+
+                        <input asp-for="Mobile"
+                               id="mobileNumber"
+                               class="form-control"
+                               placeholder="10 Digit Mobile Number"
+                               autocomplete="off"
+                               maxlength="10"
+                               required />
+
+                    </div>
+
+                    <div id="mobileError"
+                         class="text-danger mt-1"
+                         style="display:none;">
+                        Please enter a valid mobile number.
+                    </div>
+
+                </div>
+
+                <div class="col-md-6 mb-3">
+
+                    <label class="form-label">
+                        Date of Birth
+                    </label>
+
+                    <input asp-for="DateOfBirth"
+                           type="date"
+                           id="dateOfBirth"
+                           class="form-control"
+                           required />
+
+                    <div id="dobMessage"
+                         class="field-message">
+                    </div>
+
+                    <small class="text-muted d-block mt-1">
+                        You must be at least 18 years old to create an account.
+                    </small>
+
+                </div>
+
+                <div class="col-md-6 mb-3">
+
+                    <label class="form-label">
+                        Password
+                    </label>
+
+                    <input name="Password"
+                           type="password"
+                           class="form-control"
+                           placeholder="Enter password"
+                           autocomplete="new-password"
+                           required />
+
+                </div>
+
+                <div class="col-md-6 mb-3">
+
+                    <label class="form-label">
+                        Confirm Password
+                    </label>
+
+                    <input name="ConfirmPassword"
+                           type="password"
+                           class="form-control"
+                           placeholder="Confirm password"
+                           autocomplete="new-password"
+                           required />
+
+                </div>
+
+            </div>
+
+            <hr />
+
+            <h5 class="fw-bold mb-3">
+                Security Questions
+            </h5>
+
+            @for (int i = 0; i < 3; i++)
+            {
+                <div class="border rounded p-3 mb-3 security-card">
+
+                    <label class="form-label">
+                        Security Question @(i + 1)
+                    </label>
+
+                    <select name="SecurityQuestions[@i].SecurityQuestionMasterId"
+                            class="form-control mb-2 security-question-select"
+                            data-index="@i"
+                            required>
+
+                        <option value="">
+                            -- Select Question --
+                        </option>
+
+                        @if (questions != null)
+                        {
+                            foreach (var q in questions)
+                            {
+                                <option value="@q.Id">
+                                    @q.QuestionText
+                                </option>
+                            }
+                        }
+
+                        <option value="0">
+                            Other / Custom Question
+                        </option>
+
+                    </select>
+
+                    <div class="custom-question-box"
+                         id="customQuestionBox_@i">
+
+                        <label class="form-label">
+                            Custom Question
+                        </label>
+
+                        <input name="SecurityQuestions[@i].QuestionText"
+                               class="form-control mb-2 custom-question-input"
+                               id="customQuestionInput_@i"
+                               placeholder="Enter your own security question"
+                               autocomplete="off" />
+
+                    </div>
+
+                    <label class="form-label">
+                        Answer
+                    </label>
+
+                    <input name="SecurityQuestions[@i].Answer"
+                           class="form-control"
+                           placeholder="Enter answer"
+                           autocomplete="off"
+                           required />
+
+                </div>
+            }
+
+            <button type="submit"
+                    id="registerButton"
+                    class="btn btn-success">
+                Register
+            </button>
+
+            <a asp-controller="Home"
+               asp-action="Index"
+               class="btn btn-secondary">
+                Back
+            </a>
+
+        </form>
+
+    </div>
+
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+
+        const form =
+            document.getElementById("registerForm");
+
+        const registerButton =
+            document.getElementById("registerButton");
+
+        const emailInput =
+            document.getElementById("emailInput");
+
+        const emailMessage =
+            document.getElementById("emailMessage");
+
+        const dobInput =
+            document.getElementById("dateOfBirth");
+
+        const dobMessage =
+            document.getElementById("dobMessage");
+
+        const country =
+            document.getElementById("countryCode");
+
+        const mobile =
+            document.getElementById("mobileNumber");
+
+        const mobileError =
+            document.getElementById("mobileError");
+
+        const checkEmailUrl =
+            '@Url.Action("CheckEmailAvailability", "UserAuth")';
+
+        let emailAvailable = false;
+        let emailCheckTimer = null;
+
+
+        function showEmailMessage(type, message) {
+
+            emailMessage.className =
+                "field-message " + type;
+
+            emailMessage.textContent =
+                message;
+        }
+
+
+        function validateEmailFormat() {
+
+            const email =
+                emailInput.value.trim();
+
+            emailInput.classList.remove(
+                "is-valid",
+                "is-invalid"
+            );
+
+            emailAvailable = false;
+
+            if (email.length === 0) {
+
+                emailInput.classList.add(
+                    "is-invalid"
+                );
+
+                showEmailMessage(
+                    "error",
+                    "Email address is required."
+                );
+
+                return false;
+            }
+
+            const emailPattern =
+                /^[A-Za-z0-9._%+-]+@@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+
+            if (!emailPattern.test(email)) {
+
+                emailInput.classList.add(
+                    "is-invalid"
+                );
+
+                showEmailMessage(
+                    "error",
+                    "Please enter a valid email address."
+                );
+
+                return false;
+            }
+
+            return true;
+        }
+
+
+        async function checkEmailAvailability() {
+
+            if (!validateEmailFormat()) {
+                return false;
+            }
+
+            const email =
+                emailInput.value.trim();
+
+            showEmailMessage(
+                "checking",
+                "Checking email availability..."
+            );
+
+            try {
+
+                const response =
+                    await fetch(
+                        checkEmailUrl +
+                        "?email=" +
+                        encodeURIComponent(email),
+                        {
+                            method: "GET",
+                            headers: {
+                                "Accept": "application/json"
+                            }
+                        }
+                    );
+
+                if (!response.ok) {
+
+                    emailAvailable = false;
+
+                    emailInput.classList.add(
+                        "is-invalid"
+                    );
+
+                    showEmailMessage(
+                        "error",
+                        "Email could not be checked. Please try again."
+                    );
+
+                    return false;
+                }
+
+                const result =
+                    await response.json();
+
+                if (!result.valid) {
+
+                    emailAvailable = false;
+
+                    emailInput.classList.add(
+                        "is-invalid"
+                    );
+
+                    showEmailMessage(
+                        "error",
+                        result.message
+                    );
+
+                    return false;
+                }
+
+                if (!result.available) {
+
+                    emailAvailable = false;
+
+                    emailInput.classList.add(
+                        "is-invalid"
+                    );
+
+                    showEmailMessage(
+                        "error",
+                        result.message
+                    );
+
+                    return false;
+                }
+
+                emailAvailable = true;
+
+                emailInput.classList.remove(
+                    "is-invalid"
+                );
+
+                emailInput.classList.add(
+                    "is-valid"
+                );
+
+                showEmailMessage(
+                    "success",
+                    result.message
+                );
+
+                return true;
+            }
+            catch {
+
+                emailAvailable = false;
+
+                emailInput.classList.add(
+                    "is-invalid"
+                );
+
+                showEmailMessage(
+                    "error",
+                    "Email could not be checked. Please try again."
+                );
+
+                return false;
+            }
+        }
+
+
+        emailInput.addEventListener(
+            "input",
+            function () {
+
+                clearTimeout(emailCheckTimer);
+
+                emailAvailable = false;
+
+                emailInput.classList.remove(
+                    "is-valid",
+                    "is-invalid"
+                );
+
+                emailMessage.className =
+                    "field-message";
+
+                emailMessage.textContent =
+                    "";
+
+                if (!validateEmailFormat()) {
+                    return;
+                }
+
+                showEmailMessage(
+                    "checking",
+                    "Waiting to check email..."
+                );
+
+                emailCheckTimer =
+                    setTimeout(
+                        checkEmailAvailability,
+                        600
+                    );
+            }
+        );
+
+
+        emailInput.addEventListener(
+            "blur",
+            async function () {
+
+                clearTimeout(emailCheckTimer);
+
+                await checkEmailAvailability();
+            }
+        );
+
+
+        function formatDateForInput(date) {
+
+            const year =
+                date.getFullYear();
+
+            const month =
+                String(date.getMonth() + 1)
+                    .padStart(2, "0");
+
+            const day =
+                String(date.getDate())
+                    .padStart(2, "0");
+
+            return year + "-" + month + "-" + day;
+        }
+
+
+        function setMaximumDob() {
+
+            const today =
+                new Date();
+
+            const maximumDob =
+                new Date(
+                    today.getFullYear() - 18,
+                    today.getMonth(),
+                    today.getDate()
+                );
+
+            dobInput.max =
+                formatDateForInput(maximumDob);
+        }
+
+
+        function calculateAge(dateValue) {
+
+            const birthDate =
+                new Date(dateValue + "T00:00:00");
+
+            const today =
+                new Date();
+
+            let age =
+                today.getFullYear() -
+                birthDate.getFullYear();
+
+            const monthDifference =
+                today.getMonth() -
+                birthDate.getMonth();
+
+            if (
+                monthDifference < 0 ||
+                (
+                    monthDifference === 0 &&
+                    today.getDate() <
+                    birthDate.getDate()
+                )
+            ) {
+                age--;
+            }
+
+            return age;
+        }
+
+
+        function validateDob() {
+
+            dobInput.classList.remove(
+                "is-valid",
+                "is-invalid"
+            );
+
+            dobMessage.className =
+                "field-message";
+
+            dobMessage.textContent =
+                "";
+
+            if (!dobInput.value) {
+
+                dobMessage.classList.add(
+                    "error"
+                );
+
+                dobMessage.textContent =
+                    "Please select your date of birth.";
+
+                dobInput.classList.add(
+                    "is-invalid"
+                );
+
+                return false;
+            }
+
+            const selectedDate =
+                new Date(
+                    dobInput.value +
+                    "T00:00:00"
+                );
+
+            const today =
+                new Date();
+
+            if (selectedDate > today) {
+
+                dobMessage.classList.add(
+                    "error"
+                );
+
+                dobMessage.textContent =
+                    "Date of birth cannot be a future date.";
+
+                dobInput.classList.add(
+                    "is-invalid"
+                );
+
+                return false;
+            }
+
+            const age =
+                calculateAge(
+                    dobInput.value
+                );
+
+            if (age < 18) {
+
+                dobMessage.classList.add(
+                    "error"
+                );
+
+                dobMessage.textContent =
+                    "Registration is available only for users aged 18 years or older.";
+
+                dobInput.classList.add(
+                    "is-invalid"
+                );
+
+                return false;
+            }
+
+            dobMessage.classList.add(
+                "success"
+            );
+
+            dobMessage.textContent =
+                "Age requirement verified. You are eligible to register.";
+
+            dobInput.classList.add(
+                "is-valid"
+            );
+
+            return true;
+        }
+
+
+        setMaximumDob();
+
+
+        dobInput.addEventListener(
+            "change",
+            validateDob
+        );
+
+
+        dobInput.addEventListener(
+            "blur",
+            validateDob
+        );
+
+
+        const selects =
+            document.querySelectorAll(
+                ".security-question-select"
+            );
+
+        selects.forEach(function (select) {
+
+            select.addEventListener(
+                "change",
+                function () {
+
+                    const index =
+                        this.getAttribute(
+                            "data-index"
+                        );
+
+                    const customBox =
+                        document.getElementById(
+                            "customQuestionBox_" +
+                            index
+                        );
+
+                    const customInput =
+                        document.getElementById(
+                            "customQuestionInput_" +
+                            index
+                        );
+
+                    if (this.value === "0") {
+
+                        customBox.style.display =
+                            "block";
+
+                        customInput.required =
+                            true;
+                    }
+                    else {
+
+                        customBox.style.display =
+                            "none";
+
+                        customInput.required =
+                            false;
+
+                        customInput.value =
+                            "";
+                    }
+                }
+            );
+
+        });
+
+
+        
+
+        const mobileRules = {
+
+            "+91": {
+                length: 10,
+                regex: /^[6-9][0-9]{9}$/,
+                placeholder: "9876543210"
+            },
+
+            "+1": {
+                length: 10,
+                regex: /^[2-9][0-9]{9}$/,
+                placeholder: "2125551234"
+            },
+
+            "+44": {
+                length: 10,
+                regex: /^7[0-9]{9}$/,
+                placeholder: "7123456789"
+            },
+
+            "+977": {
+                length: 10,
+                regex: /^(97|98)[0-9]{8}$/,
+                placeholder: "9812345678"
+            },
+
+            "+971": {
+                length: 9,
+                regex: /^5[024568][0-9]{7}$/,
+                placeholder: "501234567"
+            },
+
+            "+92": {
+                length: 10,
+                regex: /^3[0-9]{9}$/,
+                placeholder: "3001234567"
+            },
+
+            "+880": {
+                length: 10,
+                regex: /^1[3-9][0-9]{8}$/,
+                placeholder: "1712345678"
+            }
+
+        };
+
+
+        function updateMobileRule() {
+
+            const rule = mobileRules[country.value];
+
+            mobile.maxLength = rule.length;
+            mobile.placeholder = rule.placeholder;
+
+            mobile.classList.remove(
+                "is-valid",
+                "is-invalid"
+            );
+
+            mobileError.style.display = "none";
+        }
+
+
+        function validateMobile() {
+
+            const rule = mobileRules[country.value];
+            const value = mobile.value;
+
+            // Empty field
+            if (value.length === 0) {
+
+                mobile.classList.remove(
+                    "is-valid",
+                    "is-invalid"
+                );
+
+                mobileError.style.display = "none";
+
+                return false;
+            }
+
+            // Wrong starting digit
+            if (value.length === 1) {
+
+                if (!rule.regex.test(value + "0".repeat(rule.length - 1))) {
+
+                    mobile.classList.remove("is-valid");
+                    mobile.classList.add("is-invalid");
+
+                    mobileError.textContent =
+                        "Invalid starting digit for the selected country.";
+
+                    mobileError.style.display = "block";
+
+                    return false;
+                }
+
+                mobile.classList.remove(
+                    "is-valid",
+                    "is-invalid"
+                );
+
+                mobileError.style.display = "none";
+
+                return false;
+            }
+
+            // Check starting digit while number is incomplete
+            const firstDigit = value.charAt(0);
+
+            let validStart = false;
+
+            if (country.value === "+91") {
+                validStart = /^[6-9]$/.test(firstDigit);
+            }
+            else if (country.value === "+1") {
+                validStart = /^[2-9]$/.test(firstDigit);
+            }
+            else if (country.value === "+44") {
+                validStart = /^7$/.test(firstDigit);
+            }
+            else if (country.value === "+977") {
+                validStart = /^[89]$/.test(firstDigit);
+            }
+            else if (country.value === "+971") {
+                validStart = /^5$/.test(firstDigit);
+            }
+            else if (country.value === "+92") {
+                validStart = /^3$/.test(firstDigit);
+            }
+            else if (country.value === "+880") {
+                validStart = /^1$/.test(firstDigit);
+            }
+
+            if (!validStart) {
+
+                mobile.classList.remove("is-valid");
+                mobile.classList.add("is-invalid");
+
+                mobileError.textContent =
+                    "Invalid starting digit for the selected country.";
+
+                mobileError.style.display = "block";
+
+                return false;
+            }
+
+            // Incomplete number: don't show valid or wrong
+            if (value.length < rule.length) {
+
+                mobile.classList.remove(
+                    "is-valid",
+                    "is-invalid"
+                );
+
+                mobileError.style.display = "none";
+
+                return false;
+            }
+
+            // Complete number
+            if (!rule.regex.test(value)) {
+
+                mobile.classList.remove("is-valid");
+                mobile.classList.add("is-invalid");
+
+                mobileError.textContent =
+                    "Please enter a valid mobile number for the selected country.";
+
+                mobileError.style.display = "block";
+
+                return false;
+            }
+
+            // Complete and valid
+            mobile.classList.remove("is-invalid");
+            mobile.classList.add("is-valid");
+
+            mobileError.style.display = "none";
+
+            return true;
+        }
+
+
+        country.addEventListener(
+            "change",
+            function() {
+
+                // Reset mobile when country changes
+                mobile.value = "";
+
+                updateMobileRule();
+            }
+        );
+
+
+        mobile.addEventListener(
+            "input",
+            function() {
+
+                // Allow numbers only
+                this.value = this.value.replace(/\D/g, "");
+
+                validateMobile();
+            }
+        );
+
+
+        mobile.addEventListener(
+            "keypress",
+            function(event) {
+
+                if (!/[0-9]/.test(event.key)) {
+                    event.preventDefault();
+                }
+            }
+        );
+
+
+        mobile.addEventListener(
+            "paste",
+            function(event) {
+
+                let pastedText =
+                    (
+                        event.clipboardData ||
+                        window.clipboardData
+                    )
+                        .getData("text")
+                        .replace(/\D/g, "");
+
+                const rule = mobileRules[country.value];
+
+                // Check starting digit first
+                const firstDigit = pastedText.charAt(0);
+
+                let validStart = false;
+
+                if (country.value === "+91") {
+                    validStart = /^[6-9]$/.test(firstDigit);
+                }
+                else if (country.value === "+1") {
+                    validStart = /^[2-9]$/.test(firstDigit);
+                }
+                else if (country.value === "+44") {
+                    validStart = /^7$/.test(firstDigit);
+                }
+                else if (country.value === "+977") {
+                    validStart = /^[89]$/.test(firstDigit);
+                }
+                else if (country.value === "+971") {
+                    validStart = /^5$/.test(firstDigit);
+                }
+                else if (country.value === "+92") {
+                    validStart = /^3$/.test(firstDigit);
+                }
+                else if (country.value === "+880") {
+                    validStart = /^1$/.test(firstDigit);
+                }
+
+                // Wrong starting digit
+                if (!validStart) {
+
+                    event.preventDefault();
+
+                    mobile.classList.remove("is-valid");
+                    mobile.classList.add("is-invalid");
+
+                    mobileError.textContent =
+                        "Invalid starting digit for the selected country.";
+
+                    mobileError.style.display = "block";
+
+                    return;
+                }
+
+                // Paste only valid length
+                if (pastedText.length > rule.length) {
+                    pastedText = pastedText.substring(0, rule.length);
+                }
+
+                // Put cleaned number into input
+                event.preventDefault();
+
+                mobile.value = pastedText;
+
+                validateMobile();
+            }
+        );
+
+
+        updateMobileRule();
+
+
+        form.addEventListener(
+            "submit",
+            async function (event) {
+
+                event.preventDefault();
+
+                registerButton.disabled =
+                    true;
+
+                registerButton.textContent =
+                    "Checking...";
+
+                const emailFormatValid =
+                    validateEmailFormat();
+
+                let finalEmailValid =
+                    false;
+
+                if (emailFormatValid) {
+
+                    finalEmailValid =
+                        await checkEmailAvailability();
+                }
+
+                const dobValid =
+                    validateDob();
+
+                const mobileValid =
+                    validateMobile();
+
+                if (
+                    !finalEmailValid ||
+                    !dobValid ||
+                    !mobileValid
+                ) {
+
+                    registerButton.disabled =
+                        false;
+
+                    registerButton.textContent =
+                        "Register";
+
+                    const firstInvalid =
+                        document.querySelector(
+                            ".is-invalid"
+                        );
+
+                    if (firstInvalid) {
+
+                        firstInvalid.scrollIntoView({
+                            behavior: "smooth",
+                            block: "center"
+                        });
+
+                        firstInvalid.focus();
+                    }
+
+                    return;
+                }
+
+                registerButton.textContent =
+                    "Submitting...";
+
+                form.submit();
+            }
+        );
+
+    });
+</script>

@@ -1,0 +1,339 @@
+﻿@model UserManagementMvc.ViewModels.LoginViewModel
+
+@{
+    ViewData["Title"] = "Login";
+}
+
+<style>
+
+    .login-container {
+        width: 470px;
+        margin: 50px auto;
+        padding: 30px;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        box-shadow: 0px 0px 10px #ccc;
+        background-color: white;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+        .form-group label {
+            display: inline-block;
+            width: 120px;
+            font-weight: bold;
+            font-size: 17px;
+        }
+
+    .form-control {
+        height: 38px;
+        font-size: 15px;
+    }
+
+    .message-error {
+        color: red;
+        margin-bottom: 15px;
+    }
+
+    .message-success {
+        color: green;
+        margin-bottom: 15px;
+    }
+
+    .button-area {
+        margin-left: 125px;
+    }
+
+    .forgot-link {
+        margin-left: 125px;
+        margin-top: 15px;
+    }
+
+</style>
+
+<div class="login-container">
+
+    <h2 class="text-center">
+        Login
+    </h2>
+
+    <hr />
+
+    <div id="loginError"
+         class="text-danger mb-2">
+    </div>
+
+    @if (ViewBag.Error != null)
+    {
+        <p class="message-error">
+            @ViewBag.Error
+        </p>
+    }
+
+    @if (TempData["Success"] != null)
+    {
+        <p class="message-success">
+            @TempData["Success"]
+        </p>
+    }
+
+    <form asp-action="Login"
+          method="post"
+          autocomplete="off">
+
+        <div class="form-group">
+
+            <label>
+                Login Id
+            </label>
+
+            <div class="input-group">
+
+                <select asp-for="MobileCountryCode"
+                        id="countryCode"
+                        class="form-select"
+                        style="max-width:90px;">
+
+                    <option value="+91">+91</option>
+                    <option value="+1">+1</option>
+                    <option value="+44">+44</option>
+                    <option value="+977">+977</option>
+                    <option value="+971">+971</option>
+                    <option value="+92">+92</option>
+                    <option value="+880">+880</option>
+
+                </select>
+
+                <input asp-for="LoginId"
+                       id="loginId"
+                       class="form-control"
+                       autocomplete="off"
+                       placeholder="Username / Email / Mobile" />
+
+            </div>
+
+        </div>
+
+        <div class="form-group">
+
+            <label>
+                Password
+            </label>
+
+            <input asp-for="Password"
+                   type="password"
+                   class="form-control"
+                   autocomplete="new-password"
+                   placeholder="Enter password" />
+
+        </div>
+
+        <div class="button-area">
+
+            <button type="submit"
+                    class="btn btn-success">
+                Login
+            </button>
+
+            <a asp-controller="Home"
+               asp-action="Index"
+               class="btn btn-secondary ms-2">
+                ← Back
+            </a>
+
+        </div>
+
+        <div class="forgot-link">
+
+            <a asp-controller="UserAuth"
+               asp-action="ForgotPassword">
+                Forgot Password?
+            </a>
+
+        </div>
+
+    </form>
+
+</div>
+
+
+<script>
+
+    document.addEventListener("DOMContentLoaded", function () {
+
+        const loginRules = {
+
+            "+91": {
+                length: 10,
+                regex: /^[6-9][0-9]{9}$/,
+                placeholder: "9876543210"
+            },
+
+            "+1": {
+                length: 10,
+                regex: /^[2-9][0-9]{9}$/,
+                placeholder: "2125551234"
+            },
+
+            "+44": {
+                length: 10,
+                regex: /^7[0-9]{9}$/,
+                placeholder: "7123456789"
+            },
+
+            "+977": {
+                length: 10,
+                regex: /^(97|98)[0-9]{8}$/,
+                placeholder: "9812345678"
+            },
+
+            "+971": {
+                length: 9,
+                regex: /^5[024568][0-9]{7}$/,
+                placeholder: "501234567"
+            },
+
+            "+92": {
+                length: 10,
+                regex: /^3[0-9]{9}$/,
+                placeholder: "3001234567"
+            },
+
+            "+880": {
+                length: 10,
+                regex: /^1[3-9][0-9]{8}$/,
+                placeholder: "1712345678"
+            }
+
+        };
+
+        const country = document.getElementById("countryCode");
+        const loginId = document.getElementById("loginId");
+        const error = document.getElementById("loginError");
+
+        function isEmail(value) {
+            return /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/.test(value);
+        }
+
+        function isUserName(value) {
+            return /^[a-zA-Z][a-zA-Z0-9._-]*$/.test(value);
+        }
+
+        function updateRule() {
+
+            let rule = loginRules[country.value];
+
+            loginId.value = "";
+            loginId.maxLength = rule.length;
+            loginId.placeholder = "Username / Email / Mobile";
+            loginId.style.borderColor = "#ced4da";
+            error.innerHTML = "";
+
+        }
+
+        updateRule();
+
+        country.addEventListener("change", function () {
+
+            updateRule();
+
+        });
+
+        loginId.addEventListener("keypress", function (e) {
+
+            if (e.ctrlKey || e.altKey)
+                return;
+
+            if (e.key.length > 1)
+                return;
+
+            let value = loginId.value;
+
+            if (isEmail(value) || isUserName(value))
+                return;
+
+            if (!/[0-9]/.test(e.key)) {
+
+                e.preventDefault();
+
+            }
+
+        });
+
+        loginId.addEventListener("input", function () {
+
+            let value = loginId.value.trim();
+
+            if (value === "") {
+
+                error.innerHTML = "";
+                loginId.style.borderColor = "#ced4da";
+                return;
+
+            }
+
+            if (isEmail(value)) {
+
+                loginId.removeAttribute("maxlength");
+                loginId.style.borderColor = "#198754";
+                error.innerHTML = "";
+                return;
+
+            }
+
+            if (isUserName(value)) {
+
+                loginId.removeAttribute("maxlength");
+                loginId.style.borderColor = "#198754";
+                error.innerHTML = "";
+                return;
+
+            }
+
+            loginId.value = loginId.value.replace(/\D/g, "");
+
+            let rule = loginRules[country.value];
+
+            loginId.maxLength = rule.length;
+
+            if (rule.regex.test(loginId.value)) {
+
+                loginId.style.borderColor = "#198754";
+                error.innerHTML = "";
+
+            }
+            else {
+
+                loginId.style.borderColor = "#dc3545";
+                error.innerHTML = "Invalid mobile number for selected country.";
+
+            }
+
+        });
+
+        loginId.addEventListener("paste", function (e) {
+
+            let pasted = (e.clipboardData || window.clipboardData).getData("text");
+
+            if (isEmail(pasted) || isUserName(pasted))
+                return;
+
+            pasted = pasted.replace(/\D/g, "");
+
+            let rule = loginRules[country.value];
+
+            if (!rule.regex.test(pasted)) {
+
+                e.preventDefault();
+
+                alert("Invalid mobile number.");
+
+            }
+
+        });
+
+    });
+
+</script>

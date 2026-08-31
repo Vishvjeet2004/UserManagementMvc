@@ -1,0 +1,85 @@
+﻿@model UserManagementMvc.Models.MailMessage
+
+@{
+    ViewData["Title"] = "Mail Details";
+}
+
+<div class="mail-details-page">
+
+    <div class="mail-details-card">
+
+        <div class="mail-details-header">
+
+            <div>
+                <h2>@Model.Subject</h2>
+
+                <span class="mail-type-badge">
+                    @Model.MessageType
+                </span>
+            </div>
+
+            <form asp-controller="Mail"
+                  asp-action="ToggleStar"
+                  method="post">
+
+                @Html.AntiForgeryToken()
+
+                <input type="hidden"
+                       name="id"
+                       value="@Model.Id" />
+
+                <button type="submit"
+                        class="mail-details-star @(Model.IsStarred ? "active" : "")">
+
+                    @(Model.IsStarred ? "★" : "☆")
+
+                </button>
+
+            </form>
+
+        </div>
+
+        <div class="mail-details-meta">
+
+            <div>
+                <strong>From:</strong>
+                @Model.SenderEmail
+            </div>
+
+            <div>
+                <strong>To:</strong>
+                @Model.RecipientEmail
+            </div>
+
+            <div>
+                <strong>Date:</strong>
+                @Model.SentAt.ToString("dd MMM yyyy, HH:mm")
+            </div>
+
+        </div>
+
+        <div class="mail-details-body">
+            @Model.Body
+        </div>
+
+        <div class="mail-details-footer">
+
+            <a asp-controller="Mail"
+               asp-action="Compose"
+               asp-route-to="@Model.SenderEmail"
+               asp-route-replyTo="@Model.Id"
+               class="mail-primary-button">
+                Reply
+            </a>
+
+            <a asp-controller="Mail"
+               asp-action="Inbox"
+               class="mail-secondary-button">
+                Back
+            </a>
+
+        </div>
+
+    </div>
+
+</div>

@@ -1,0 +1,625 @@
+﻿@using Microsoft.AspNetCore.Http
+
+@{
+    ViewData["Title"] = "Dashboard";
+
+    // Login user ka role session se le rahe hain
+    string userRole =
+        Context.Session.GetString("UserRole")?.Trim() ?? "";
+
+    // Login user ka department session se le rahe hain
+    string userDepartment =
+        Context.Session.GetString("UserDepartment")?.Trim() ?? "";
+
+    // SuperAdmin check
+    bool isSuperAdmin =
+        userRole.Equals(
+            "SuperAdmin",
+            StringComparison.OrdinalIgnoreCase
+        );
+
+    // Admin check
+    bool isAdmin =
+        userRole.Equals(
+            "Admin",
+            StringComparison.OrdinalIgnoreCase
+        );
+
+    // Support department alag naam se save ho sakta hai
+    bool isSupportDepartment =
+        userDepartment.Equals(
+            "Support",
+            StringComparison.OrdinalIgnoreCase
+        )
+        ||
+        userDepartment.Equals(
+            "Support Team",
+            StringComparison.OrdinalIgnoreCase
+        )
+        ||
+        userDepartment.Equals(
+            "Support Department",
+            StringComparison.OrdinalIgnoreCase
+        );
+
+    // Help manage permission
+    bool canManageHelp =
+        isSuperAdmin ||
+        isAdmin ||
+        isSupportDepartment;
+
+    // Privacy manage permission
+    bool canManagePrivacy =
+        isSuperAdmin ||
+        isAdmin ||
+        isSupportDepartment;
+
+    // Home feature sirf SuperAdmin manage karega
+    bool canManageHomeFeatures =
+        isSuperAdmin;
+}
+
+<style>
+    .dashboard-header {
+        background: linear-gradient(135deg, #1f2937, #374151);
+        color: white;
+        border-radius: 16px;
+        padding: 28px;
+        margin-bottom: 28px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    }
+
+    .dashboard-header h2 {
+        margin-bottom: 6px;
+        font-weight: 700;
+    }
+
+    .dashboard-section {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+    }
+
+    .dashboard-section-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 18px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .dashboard-card {
+        height: 100%;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 20px;
+        background: #f9fafb;
+        transition: all 0.25s ease;
+    }
+
+    .dashboard-card:hover {
+        transform: translateY(-4px);
+        border-color: #cbd5e1;
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.09);
+        background: #ffffff;
+    }
+
+    .dashboard-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        margin-bottom: 14px;
+        background: #e5e7eb;
+    }
+
+    .dashboard-card h5 {
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 8px;
+    }
+
+    .dashboard-card p {
+        color: #6b7280;
+        min-height: 48px;
+        margin-bottom: 16px;
+    }
+
+    .dashboard-open-btn {
+        width: 100%;
+        border-radius: 9px;
+        font-weight: 600;
+    }
+
+    .role-badge {
+        background: rgba(255, 255, 255, 0.18);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        padding: 7px 12px;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+
+    .department-text {
+        color: #d1d5db;
+        margin-top: 8px;
+        margin-bottom: 0;
+    }
+</style>
+
+<div class="container mt-4 mb-5">
+
+    @* Dashboard ka top header *@
+    <div class="dashboard-header">
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center">
+
+            <div>
+                <h2>
+                    Dashboard
+                </h2>
+
+                <p class="mb-2">
+                    Welcome, @ViewBag.UserName
+                </p>
+
+                @if (!string.IsNullOrWhiteSpace(userDepartment))
+                {
+                    <p class="department-text">
+                        Department: @userDepartment
+                    </p>
+                }
+            </div>
+
+            <div class="mt-3 mt-md-0">
+                <span class="role-badge">
+                    @userRole
+                </span>
+            </div>
+
+        </div>
+
+    </div>
+
+    @* SuperAdmin ke liye user management section *@
+    @if (isSuperAdmin)
+    {
+        <div class="dashboard-section">
+
+            <div class="dashboard-section-title">
+                User Management
+            </div>
+
+            <div class="row g-4">
+
+                <div class="col-md-6 col-lg-3">
+                    <div class="dashboard-card">
+
+                        <div class="dashboard-icon">
+                            👥
+                        </div>
+
+                        <h5>
+                            All Users
+                        </h5>
+
+                        <p>
+                            View, search and manage all registered users.
+                        </p>
+
+                        <a asp-controller="Users"
+                           asp-action="Index"
+                           class="btn btn-outline-dark dashboard-open-btn">
+                            Open
+                        </a>
+
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-3">
+                    <div class="dashboard-card">
+
+                        <div class="dashboard-icon">
+                            ➕
+                        </div>
+
+                        <h5>
+                            Add User
+                        </h5>
+
+                        <p>
+                            Create a new User, Admin or SuperAdmin account.
+                        </p>
+
+                        <a asp-controller="Users"
+                           asp-action="Create"
+                           class="btn btn-outline-dark dashboard-open-btn">
+                            Open
+                        </a>
+
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-3">
+                    <div class="dashboard-card">
+
+                        <div class="dashboard-icon">
+                            🗑️
+                        </div>
+
+                        <h5>
+                            Trash
+                        </h5>
+
+                        <p>
+                            Restore users or permanently remove deleted accounts.
+                        </p>
+
+                        <a asp-controller="Users"
+                           asp-action="Trash"
+                           class="btn btn-outline-dark dashboard-open-btn">
+                            Open
+                        </a>
+
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-3">
+                    <div class="dashboard-card">
+
+                        <div class="dashboard-icon">
+                            🚫
+                        </div>
+
+                        <h5>
+                            Blocked Accounts
+                        </h5>
+
+                        <p>
+                            Review and unblock accounts blocked after failed logins.
+                        </p>
+
+                        <a asp-controller="Users"
+                           asp-action="BlockedAccounts"
+                           class="btn btn-outline-dark dashboard-open-btn">
+                            Open
+                        </a>
+
+
+
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        @* SuperAdmin security section *@
+        <div class="dashboard-section">
+
+            <div class="dashboard-section-title">
+                Security
+            </div>
+
+            <div class="row g-4">
+
+                <div class="col-md-6 col-lg-4">
+                    <div class="dashboard-card">
+
+                        <div class="dashboard-icon">
+                            🔐
+                        </div>
+
+                        <h5>
+                            Security Questions
+                        </h5>
+
+                        <p>
+                            Add, edit and manage account recovery questions.
+                        </p>
+
+                        <a asp-controller="SecurityQuestions"
+                           asp-action="Index"
+                           class="btn btn-outline-dark dashboard-open-btn">
+                            Open
+                        </a>
+
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    }
+    else if (isAdmin)
+    {
+        @* Admin ko blocked account aur security question management nahi milega *@
+        <div class="dashboard-section">
+
+            <div class="dashboard-section-title">
+                User Management
+            </div>
+
+            <div class="row g-4">
+
+                <div class="col-md-6 col-lg-4">
+                    <div class="dashboard-card">
+
+                        <div class="dashboard-icon">
+                            👥
+                        </div>
+
+                        <h5>
+                            User List
+                        </h5>
+
+                        <p>
+                            View and manage User and Admin accounts.
+                        </p>
+
+                        <a asp-controller="Users"
+                           asp-action="Index"
+                           class="btn btn-outline-dark dashboard-open-btn">
+                            Open
+                        </a>
+
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-4">
+                    <div class="dashboard-card">
+
+                        <div class="dashboard-icon">
+                            ➕
+                        </div>
+
+                        <h5>
+                            Add User
+                        </h5>
+
+                        <p>
+                            Create a new normal user account.
+                        </p>
+
+                        <a asp-controller="Users"
+                           asp-action="Create"
+                           class="btn btn-outline-dark dashboard-open-btn">
+                            Open
+                        </a>
+
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-4">
+                    <div class="dashboard-card">
+
+                        <div class="dashboard-icon">
+                            🗑️
+                        </div>
+
+                        <h5>
+                            Trash
+                        </h5>
+
+                        <p>
+                            Restore or permanently remove deleted users.
+                        </p>
+
+                        <a asp-controller="Users"
+                           asp-action="Trash"
+                           class="btn btn-outline-dark dashboard-open-btn">
+                            Open
+                        </a>
+
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    }
+    else
+    {
+        @* Normal user ko sirf apni profile ka card milega *@
+        <div class="dashboard-section">
+
+            <div class="dashboard-section-title">
+                My Account
+            </div>
+
+            <div class="row g-4">
+
+                <div class="col-md-6 col-lg-4">
+                    <div class="dashboard-card">
+
+                        <div class="dashboard-icon">
+                            👤
+                        </div>
+
+                        <h5>
+                            My Profile
+                        </h5>
+
+                        <p>
+                            View and update your account details.
+                        </p>
+
+                        <a asp-controller="Users"
+                           asp-action="Index"
+                           class="btn btn-outline-dark dashboard-open-btn">
+                            Open
+                        </a>
+
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    }
+
+    @* Content management section permission ke hisab se show hoga *@
+    @if (canManagePrivacy ||
+         canManageHelp ||
+         canManageHomeFeatures ||
+         isSuperAdmin)
+    {
+        <div class="dashboard-section">
+
+            <div class="dashboard-section-title">
+                Website Content
+            </div>
+
+            <div class="row g-4">
+
+                @if (isSuperAdmin)
+                {
+                    <div class="col-md-6 col-lg-3">
+                        <div class="dashboard-card">
+
+                            <div class="dashboard-icon">
+                                🌐
+                            </div>
+
+                            <h5>
+                                Site Content
+                            </h5>
+
+                            <p>
+                                Manage website title, subtitle and footer content.
+                            </p>
+
+                            <a asp-controller="SiteContents"
+                               asp-action="Index"
+                               class="btn btn-outline-dark dashboard-open-btn">
+                                Open
+                            </a>
+
+                        </div>
+                    </div>
+                }
+
+                @if (canManageHomeFeatures)
+                {
+                    <div class="col-md-6 col-lg-3">
+                        <div class="dashboard-card">
+
+                            <div class="dashboard-icon">
+                                🏠
+                            </div>
+
+                            <h5>
+                                Home Features
+                            </h5>
+
+                            <p>
+                                Manage feature cards shown on the home page.
+                            </p>
+
+                            <a asp-controller="SiteContentSections"
+                               asp-action="Index"
+                               asp-route-pageName="HomeFeature"
+                               class="btn btn-outline-dark dashboard-open-btn">
+                                Open
+                            </a>
+
+                        </div>
+                    </div>
+                }
+
+                @if (isSuperAdmin)
+                {
+                    <div class="col-md-6 col-lg-3">
+                        <div class="dashboard-card">
+
+                            <div class="dashboard-icon">
+                                😀
+                            </div>
+
+                            <h5>
+                                Emoji Management
+                            </h5>
+
+                            <p>
+                                Add, remove and manage emojis available in messenger.
+                            </p>
+
+                            <a asp-controller="EmojiManagement"
+                               asp-action="Index"
+                               class="btn btn-outline-dark dashboard-open-btn">
+                                Open
+                            </a>
+
+                        </div>
+                    </div>
+                }
+
+                @if (canManagePrivacy)
+                {
+                    <div class="col-md-6 col-lg-3">
+                        <div class="dashboard-card">
+
+                            <div class="dashboard-icon">
+                                📄
+                            </div>
+
+                            <h5>
+                                Privacy Page
+                            </h5>
+
+                            <p>
+                                Add, edit and arrange privacy page sections.
+                            </p>
+
+                            <a asp-controller="SiteContentSections"
+                               asp-action="Index"
+                               asp-route-pageName="Privacy"
+                               class="btn btn-outline-dark dashboard-open-btn">
+                                Open
+                            </a>
+
+                        </div>
+                    </div>
+                }
+
+                @if (canManageHelp)
+                {
+                    <div class="col-md-6 col-lg-3">
+                        <div class="dashboard-card">
+
+                            <div class="dashboard-icon">
+                                ❓
+                            </div>
+
+                            <h5>
+                                Help Page
+                            </h5>
+
+                            <p>
+                                Manage help information and support sections.
+                            </p>
+
+                            <a asp-controller="SiteContentSections"
+                               asp-action="Index"
+                               asp-route-pageName="Help"
+                               class="btn btn-outline-dark dashboard-open-btn">
+                                Open
+                            </a>
+
+                        </div>
+                    </div>
+                }
+
+            </div>
+
+        </div>
+    }
+
+</div>

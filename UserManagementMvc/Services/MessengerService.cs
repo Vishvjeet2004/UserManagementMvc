@@ -13,7 +13,7 @@ namespace UserManagementMvc.Services
             _context = context;
         }
 
-        // SEARCH USERS + RECENT CONVERSATIONS
+        // Search users and sort recent conversations first.
         public async Task<List<UserSearchViewModel>> SearchUsersAsync(
             int currentUserId,
             string? search)
@@ -43,7 +43,6 @@ namespace UserManagementMvc.Services
                     Name = x.Name,
                     UserName = x.UserName ?? "",
                     Department = x.Department,
-
                     LastSeen = x.LastSeenAt.HasValue
                         ? x.LastSeenAt.Value.ToString(
                             "dd MMM yyyy, hh\\:mm tt")
@@ -67,48 +66,51 @@ namespace UserManagementMvc.Services
                 .Take(1000)
                 .ToListAsync();
 
-            var latestByUser =
-                latestMessages
-                    .GroupBy(x =>
-                        x.SenderUserId == currentUserId
-                            ? x.RecipientUserId
-                            : x.SenderUserId)
-                    .ToDictionary(
-                        g => g.Key,
-                        g => g.First());
+            var latestByUser = latestMessages
+                .GroupBy(x =>
+                    x.SenderUserId == currentUserId
+                        ? x.RecipientUserId
+                        : x.SenderUserId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.First());
 
-            var unreadCounts =
-                await _context.ChatMessages
-                    .AsNoTracking()
-                    .Where(x =>
-                        x.RecipientUserId == currentUserId &&
-                        x.SeenAt == null &&
-                        !x.IsDeletedByRecipient)
-                    .GroupBy(x => x.SenderUserId)
-                    .Select(g => new
-                    {
-                        UserId = g.Key,
-                        Count = g.Count()
-                    })
-                    .ToDictionaryAsync(
-                        x => x.UserId,
-                        x => x.Count);
+            var unreadCounts = await _context.ChatMessages
+                .AsNoTracking()
+                .Where(x =>
+                    x.RecipientUserId == currentUserId &&
+                    x.SeenAt == null &&
+                    !x.IsDeletedByRecipient)
+                .GroupBy(x => x.SenderUserId)
+                .Select(g => new
+                {
+                    UserId = g.Key,
+                    Count = g.Count()
+                })
+                .ToDictionaryAsync(
+                    x => x.UserId,
+                    x => x.Count);
+
+            var result = new List<(UserSearchViewModel User, DateTime? LastMessageAt)>();
 
             foreach (var user in users)
             {
+                DateTime? lastMessageAt = null;
+
                 if (latestByUser.TryGetValue(
                     user.Id,
                     out var latest))
                 {
                     user.LastMessage =
-                        string.IsNullOrWhiteSpace(
-                            latest.MessageText)
+                        string.IsNullOrWhiteSpace(latest.MessageText)
                             ? "Attachment"
                             : latest.MessageText;
 
                     user.LastMessageAt =
                         latest.SentAt.ToString(
                             "dd MMM, hh\\:mm tt");
+
+                    lastMessageAt = latest.SentAt;
                 }
 
                 if (unreadCounts.TryGetValue(
@@ -117,19 +119,20 @@ namespace UserManagementMvc.Services
                 {
                     user.UnreadCount = unread;
                 }
+
+                result.Add((user, lastMessageAt));
             }
 
-            return users
-                .OrderByDescending(x =>
-                    x.LastMessageAt != null)
-                .ThenByDescending(x =>
-                    x.LastMessageAt)
-                .ThenBy(x => x.Name)
+            return result
+                .OrderByDescending(x => x.LastMessageAt.HasValue)
+                .ThenByDescending(x => x.LastMessageAt)
+                .ThenBy(x => x.User.Name)
                 .Take(100)
+                .Select(x => x.User)
                 .ToList();
         }
 
-        // GET SINGLE USER
+        // Get a single user for chat.
         public async Task<UserSearchViewModel?> GetUserByIdAsync(
             int currentUserId,
             int userId)
@@ -147,7 +150,6 @@ namespace UserManagementMvc.Services
                     Name = x.Name,
                     UserName = x.UserName ?? "",
                     Department = x.Department,
-
                     LastSeen = x.LastSeenAt.HasValue
                         ? x.LastSeenAt.Value.ToString(
                             "dd MMM yyyy, hh\\:mm tt")
@@ -156,11 +158,10 @@ namespace UserManagementMvc.Services
                 .FirstOrDefaultAsync();
         }
 
-        // GET CONVERSATION
-        public async Task<List<ChatMessageViewModel>>
-            GetConversationAsync(
-                int currentUserId,
-                int otherUserId)
+        // Get all messages between two users.
+        public async Task<List<ChatMessageViewModel>> GetConversationAsync(
+            int currentUserId,
+            int otherUserId)
         {
             var messages = await _context.ChatMessages
                 .AsNoTracking()
@@ -181,8 +182,7 @@ namespace UserManagementMvc.Services
 
             return messages.Select(x =>
             {
-                bool mine =
-                    x.SenderUserId == currentUserId;
+                bool mine = x.SenderUserId == currentUserId;
 
                 string status;
 
@@ -206,47 +206,31 @@ namespace UserManagementMvc.Services
                 return new ChatMessageViewModel
                 {
                     Id = x.Id,
+                    SenderUserId = x.SenderUserId,
+                    RecipientUserId = x.RecipientUserId,
+                    MessageText = x.MessageText,
 
-                    SenderUserId =
-                        x.SenderUserId,
+                    SentAt = x.SentAt.ToString(
+                        "hh\\:mm tt"),
 
-                    RecipientUserId =
-                        x.RecipientUserId,
+                    DeliveredAt = x.DeliveredAt?
+                        .ToString("hh\\:mm tt"),
 
-                    MessageText =
-                        x.MessageText,
-
-                    SentAt =
-                        x.SentAt.ToString("hh\\:mm tt"),
-
-                    DeliveredAt =
-                        x.DeliveredAt?
-                            .ToString("hh\\:mm tt"),
-
-                    SeenAt =
-                        x.SeenAt?
-                            .ToString("hh\\:mm tt"),
+                    SeenAt = x.SeenAt?
+                        .ToString("hh\\:mm tt"),
 
                     IsMine = mine,
-
                     Status = status,
 
-                    AttachmentUrl =
-                        x.AttachmentUrl,
-
-                    AttachmentName =
-                        x.AttachmentName,
-
-                    AttachmentContentType =
-                        x.AttachmentContentType,
-
-                    AttachmentSize =
-                        x.AttachmentSize
+                    AttachmentUrl = x.AttachmentUrl,
+                    AttachmentName = x.AttachmentName,
+                    AttachmentContentType = x.AttachmentContentType,
+                    AttachmentSize = x.AttachmentSize
                 };
             }).ToList();
         }
 
-        // GET ACTIVE EMOJIS
+        // Get all active emojis.
         public async Task<List<ChatEmoji>> GetActiveEmojisAsync()
         {
             return await _context.ChatEmojis
@@ -257,7 +241,7 @@ namespace UserManagementMvc.Services
                 .ToListAsync();
         }
 
-        // SEND MESSAGE
+        // Create and save a new message.
         public async Task<ChatMessage?> SendMessageAsync(
             int senderUserId,
             int recipientUserId,
@@ -279,8 +263,8 @@ namespace UserManagementMvc.Services
             if (!hasText && !hasAttachment)
                 return null;
 
-            var recipientExists =
-                await _context.Users.AnyAsync(x =>
+            var recipientExists = await _context.Users
+                .AnyAsync(x =>
                     x.Id == recipientUserId &&
                     x.IsDeleted != true &&
                     x.IsActive != false);
@@ -290,29 +274,14 @@ namespace UserManagementMvc.Services
 
             var message = new ChatMessage
             {
-                SenderUserId =
-                    senderUserId,
-
-                RecipientUserId =
-                    recipientUserId,
-
-                MessageText =
-                    messageText?.Trim() ?? "",
-
-                SentAt =
-                    DateTime.Now,
-
-                AttachmentUrl =
-                    attachmentUrl,
-
-                AttachmentName =
-                    attachmentName,
-
-                AttachmentContentType =
-                    attachmentContentType,
-
-                AttachmentSize =
-                    attachmentSize
+                SenderUserId = senderUserId,
+                RecipientUserId = recipientUserId,
+                MessageText = messageText?.Trim() ?? "",
+                SentAt = DateTime.Now,
+                AttachmentUrl = attachmentUrl,
+                AttachmentName = attachmentName,
+                AttachmentContentType = attachmentContentType,
+                AttachmentSize = attachmentSize
             };
 
             _context.ChatMessages.Add(message);
@@ -322,19 +291,18 @@ namespace UserManagementMvc.Services
             return message;
         }
 
-        // MARK DELIVERED
+        // Mark received messages as delivered.
         public async Task<bool> MarkDeliveredAsync(
             int currentUserId,
             int otherUserId)
         {
-            var messages =
-                await _context.ChatMessages
-                    .Where(x =>
-                        x.SenderUserId == otherUserId &&
-                        x.RecipientUserId == currentUserId &&
-                        x.DeliveredAt == null &&
-                        !x.IsDeletedByRecipient)
-                    .ToListAsync();
+            var messages = await _context.ChatMessages
+                .Where(x =>
+                    x.SenderUserId == otherUserId &&
+                    x.RecipientUserId == currentUserId &&
+                    x.DeliveredAt == null &&
+                    !x.IsDeletedByRecipient)
+                .ToListAsync();
 
             if (messages.Count == 0)
                 return false;
@@ -351,19 +319,18 @@ namespace UserManagementMvc.Services
             return true;
         }
 
-        // MARK SEEN
+        // Mark received messages as seen.
         public async Task<bool> MarkSeenAsync(
             int currentUserId,
             int otherUserId)
         {
-            var messages =
-                await _context.ChatMessages
-                    .Where(x =>
-                        x.SenderUserId == otherUserId &&
-                        x.RecipientUserId == currentUserId &&
-                        x.SeenAt == null &&
-                        !x.IsDeletedByRecipient)
-                    .ToListAsync();
+            var messages = await _context.ChatMessages
+                .Where(x =>
+                    x.SenderUserId == otherUserId &&
+                    x.RecipientUserId == currentUserId &&
+                    x.SeenAt == null &&
+                    !x.IsDeletedByRecipient)
+                .ToListAsync();
 
             if (messages.Count == 0)
                 return false;
@@ -385,19 +352,18 @@ namespace UserManagementMvc.Services
             return true;
         }
 
-        // DELETE FOR ME
+        // Delete a message only for the current user.
         public async Task<bool> DeleteForMeAsync(
             int currentUserId,
             int messageId)
         {
-            var message =
-                await _context.ChatMessages
-                    .FirstOrDefaultAsync(x =>
-                        x.Id == messageId &&
-                        (
-                            x.SenderUserId == currentUserId ||
-                            x.RecipientUserId == currentUserId
-                        ));
+            var message = await _context.ChatMessages
+                .FirstOrDefaultAsync(x =>
+                    x.Id == messageId &&
+                    (
+                        x.SenderUserId == currentUserId ||
+                        x.RecipientUserId == currentUserId
+                    ));
 
             if (message == null)
                 return false;
@@ -417,12 +383,11 @@ namespace UserManagementMvc.Services
             return true;
         }
 
-        // UPDATE LAST SEEN
+        // Update the user's last-seen timestamp.
         public async Task UpdateLastSeenAsync(int userId)
         {
-            var user =
-                await _context.Users
-                    .FirstOrDefaultAsync(x => x.Id == userId);
+            var user = await _context.Users
+                .FirstOrDefaultAsync(x => x.Id == userId);
 
             if (user == null)
                 return;

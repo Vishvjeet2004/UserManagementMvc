@@ -11,12 +11,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const bodyField =
         document.getElementById("mailBodyField");
 
-    /*
-     * IMPORTANT:
-     * Current Compose.cshtml uses:
-     * mailComposeToolbar
-     * mail-toolbar-button
-     */
     const toolbar =
         document.getElementById("mailComposeToolbar");
 
@@ -54,7 +48,6 @@ document.addEventListener("DOMContentLoaded", function () {
         };
 
     if (!form || !editor || !bodyField || !toolbar) {
-
         console.error(
             "Mail composer: required elements are missing."
         );
@@ -64,33 +57,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
     let savedRange = null;
 
-    /*
-     * --------------------------------------------------
-     * BODY INITIALIZATION
-     * --------------------------------------------------
-     */
-
     if (
         bodyField.value &&
         bodyField.value.trim() !== ""
     ) {
-
         editor.innerHTML =
             bodyField.value;
     }
 
-    /*
-     * --------------------------------------------------
-     * CC
-     * --------------------------------------------------
-     */
-
     if (showCcButton && ccField) {
-
         showCcButton.addEventListener(
             "click",
             function () {
-
                 ccField.classList.toggle(
                     "is-visible"
                 );
@@ -103,18 +81,10 @@ document.addEventListener("DOMContentLoaded", function () {
         );
     }
 
-    /*
-     * --------------------------------------------------
-     * BCC
-     * --------------------------------------------------
-     */
-
     if (showBccButton && bccField) {
-
         showBccButton.addEventListener(
             "click",
             function () {
-
                 bccField.classList.toggle(
                     "is-visible"
                 );
@@ -126,12 +96,6 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         );
     }
-
-    /*
-     * --------------------------------------------------
-     * SAVE SELECTION
-     * --------------------------------------------------
-     */
 
     function saveSelection() {
 
@@ -153,24 +117,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 range.commonAncestorContainer
             )
         ) {
-
             savedRange =
                 range.cloneRange();
         }
     }
 
-    /*
-     * --------------------------------------------------
-     * RESTORE SELECTION
-     * --------------------------------------------------
-     */
-
     function restoreSelection() {
 
         if (!savedRange) {
-
             editor.focus();
-
             return;
         }
 
@@ -199,23 +154,11 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    /*
-     * --------------------------------------------------
-     * SYNC BODY
-     * --------------------------------------------------
-     */
-
     function syncBody() {
 
         bodyField.value =
             editor.innerHTML.trim();
     }
-
-    /*
-     * --------------------------------------------------
-     * EXECUTE FORMAT COMMAND
-     * --------------------------------------------------
-     */
 
     function execute(
         command,
@@ -244,12 +187,6 @@ document.addEventListener("DOMContentLoaded", function () {
         syncBody();
     }
 
-    /*
-     * --------------------------------------------------
-     * TOOL ENABLED
-     * --------------------------------------------------
-     */
-
     function toolEnabled(toolKey) {
 
         if (
@@ -257,7 +194,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 config.tools
             )
         ) {
-
             return true;
         }
 
@@ -265,12 +201,6 @@ document.addEventListener("DOMContentLoaded", function () {
             toolKey
         );
     }
-
-    /*
-     * --------------------------------------------------
-     * POPOVERS
-     * --------------------------------------------------
-     */
 
     function closePopovers() {
 
@@ -291,12 +221,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    /*
-     * --------------------------------------------------
-     * TOOLBAR BUTTONS
-     * --------------------------------------------------
-     */
-
     toolbar
         .querySelectorAll(
             ".mail-toolbar-button"
@@ -306,10 +230,6 @@ document.addEventListener("DOMContentLoaded", function () {
             const tool =
                 button.dataset.tool;
 
-            /*
-             * Prevent editor selection from disappearing
-             * when toolbar is clicked.
-             */
             button.addEventListener(
                 "mousedown",
                 function (event) {
@@ -325,16 +245,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 async function () {
 
                     await handleTool(tool);
-
                 }
             );
         });
-
-    /*
-     * --------------------------------------------------
-     * HANDLE TOOL
-     * --------------------------------------------------
-     */
 
     async function handleTool(tool) {
 
@@ -342,9 +255,6 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        /*
-         * Attachment and emoji need special handling.
-         */
         if (tool !== "emoji") {
             closePopovers();
         }
@@ -357,13 +267,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 break;
 
-
             case "redo":
 
                 execute("redo");
 
                 break;
-
 
             case "font":
 
@@ -371,12 +279,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
                     restoreSelection();
 
+                    positionPopover(
+                        fontPopover,
+                        '[data-tool="font"]'
+                    );
+
                     fontPopover.hidden =
                         false;
                 }
 
                 break;
-
 
             case "fontSize":
 
@@ -384,12 +296,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
                     restoreSelection();
 
+                    positionPopover(
+                        fontSizePopover,
+                        '[data-tool="fontSize"]'
+                    );
+
                     fontSizePopover.hidden =
                         false;
                 }
 
                 break;
-
 
             case "bold":
 
@@ -397,13 +313,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 break;
 
-
             case "italic":
 
                 execute("italic");
 
                 break;
-
 
             case "underline":
 
@@ -411,12 +325,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 break;
 
-
             case "textColor":
 
                 if (colorPopover) {
 
                     restoreSelection();
+
+                    positionPopover(
+                        colorPopover,
+                        '[data-tool="textColor"]'
+                    );
 
                     colorPopover.hidden =
                         false;
@@ -424,19 +342,22 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 break;
 
-
             case "align":
 
                 if (alignPopover) {
 
                     restoreSelection();
 
+                    positionPopover(
+                        alignPopover,
+                        '[data-tool="align"]'
+                    );
+
                     alignPopover.hidden =
                         false;
                 }
 
                 break;
-
 
             case "orderedList":
 
@@ -446,7 +367,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 break;
 
-
             case "unorderedList":
 
                 execute(
@@ -455,20 +375,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 break;
 
-
             case "outdent":
 
                 execute("outdent");
 
                 break;
 
-
             case "indent":
 
                 execute("indent");
 
                 break;
-
 
             case "quote":
 
@@ -479,7 +396,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 break;
 
-
             case "strike":
 
                 execute(
@@ -487,7 +403,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 );
 
                 break;
-
 
             case "removeFormat":
 
@@ -497,13 +412,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 break;
 
-
             case "attachment":
 
                 openAttachmentPicker();
 
                 break;
-
 
             case "image":
 
@@ -511,13 +424,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 break;
 
-
             case "link":
 
                 insertLink();
 
                 break;
-
 
             case "emoji":
 
@@ -525,13 +436,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 break;
 
-
             case "signature":
 
                 insertSignature();
 
                 break;
 
+            case "confidential":
+
+                break;
 
             default:
 
@@ -539,11 +452,182 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    /*
-     * --------------------------------------------------
-     * ATTACHMENT PICKER
-     * --------------------------------------------------
-     */
+    function positionPopover(
+        popover,
+        selector
+    ) {
+
+        const button =
+            toolbar.querySelector(
+                selector
+            );
+
+        if (!button) {
+            return;
+        }
+
+        const rect =
+            button.getBoundingClientRect();
+
+        const width =
+            popover.offsetWidth || 180;
+
+        let left =
+            rect.left;
+
+        let top =
+            rect.top - 8;
+
+        if (
+            left + width >
+            window.innerWidth - 8
+        ) {
+            left =
+                window.innerWidth -
+                width -
+                8;
+        }
+
+        if (left < 8) {
+            left = 8;
+        }
+
+        popover.style.left =
+            left + "px";
+
+        popover.style.bottom =
+            (window.innerHeight - rect.top + 8) + "px";
+
+        popover.style.top =
+            "auto";
+    }
+
+    if (fontPopover) {
+
+        fontPopover
+            .querySelectorAll(
+                "[data-font]"
+            )
+            .forEach(function (button) {
+
+                button.addEventListener(
+                    "mousedown",
+                    function (event) {
+                        event.preventDefault();
+                    }
+                );
+
+                button.addEventListener(
+                    "click",
+                    function () {
+
+                        restoreSelection();
+
+                        execute(
+                            "fontName",
+                            button.dataset.font
+                        );
+
+                        closePopovers();
+                    }
+                );
+            });
+    }
+
+    if (fontSizePopover) {
+
+        fontSizePopover
+            .querySelectorAll(
+                "[data-size]"
+            )
+            .forEach(function (button) {
+
+                button.addEventListener(
+                    "mousedown",
+                    function (event) {
+                        event.preventDefault();
+                    }
+                );
+
+                button.addEventListener(
+                    "click",
+                    function () {
+
+                        restoreSelection();
+
+                        execute(
+                            "fontSize",
+                            button.dataset.size
+                        );
+
+                        closePopovers();
+                    }
+                );
+            });
+    }
+
+    if (colorPopover) {
+
+        colorPopover
+            .querySelectorAll(
+                "[data-color]"
+            )
+            .forEach(function (button) {
+
+                button.addEventListener(
+                    "mousedown",
+                    function (event) {
+                        event.preventDefault();
+                    }
+                );
+
+                button.addEventListener(
+                    "click",
+                    function () {
+
+                        restoreSelection();
+
+                        execute(
+                            "foreColor",
+                            button.dataset.color
+                        );
+
+                        closePopovers();
+                    }
+                );
+            });
+    }
+
+    if (alignPopover) {
+
+        alignPopover
+            .querySelectorAll(
+                "[data-align]"
+            )
+            .forEach(function (button) {
+
+                button.addEventListener(
+                    "mousedown",
+                    function (event) {
+                        event.preventDefault();
+                    }
+                );
+
+                button.addEventListener(
+                    "click",
+                    function () {
+
+                        restoreSelection();
+
+                        execute(
+                            button.dataset.align
+                        );
+
+                        closePopovers();
+                    }
+                );
+            });
+    }
 
     function openAttachmentPicker() {
 
@@ -570,171 +654,6 @@ document.addEventListener("DOMContentLoaded", function () {
         );
     }
 
-    /*
-     * --------------------------------------------------
-     * FONT POPOVER
-     * --------------------------------------------------
-     */
-
-    if (fontPopover) {
-
-        fontPopover
-            .querySelectorAll(
-                "[data-font]"
-            )
-            .forEach(function (button) {
-
-                button.addEventListener(
-                    "mousedown",
-                    function (event) {
-
-                        event.preventDefault();
-
-                    }
-                );
-
-                button.addEventListener(
-                    "click",
-                    function () {
-
-                        restoreSelection();
-
-                        execute(
-                            "fontName",
-                            button.dataset.font
-                        );
-
-                        closePopovers();
-                    }
-                );
-            });
-    }
-
-    /*
-     * --------------------------------------------------
-     * FONT SIZE
-     * --------------------------------------------------
-     */
-
-    if (fontSizePopover) {
-
-        fontSizePopover
-            .querySelectorAll(
-                "[data-size]"
-            )
-            .forEach(function (button) {
-
-                button.addEventListener(
-                    "mousedown",
-                    function (event) {
-
-                        event.preventDefault();
-
-                    }
-                );
-
-                button.addEventListener(
-                    "click",
-                    function () {
-
-                        restoreSelection();
-
-                        execute(
-                            "fontSize",
-                            button.dataset.size
-                        );
-
-                        closePopovers();
-                    }
-                );
-            });
-    }
-
-    /*
-     * --------------------------------------------------
-     * TEXT COLOR
-     * --------------------------------------------------
-     */
-
-    if (colorPopover) {
-
-        colorPopover
-            .querySelectorAll(
-                "[data-color]"
-            )
-            .forEach(function (button) {
-
-                button.addEventListener(
-                    "mousedown",
-                    function (event) {
-
-                        event.preventDefault();
-
-                    }
-                );
-
-                button.addEventListener(
-                    "click",
-                    function () {
-
-                        restoreSelection();
-
-                        execute(
-                            "foreColor",
-                            button.dataset.color
-                        );
-
-                        closePopovers();
-                    }
-                );
-            });
-    }
-
-    /*
-     * --------------------------------------------------
-     * ALIGNMENT
-     * --------------------------------------------------
-     */
-
-    if (alignPopover) {
-
-        alignPopover
-            .querySelectorAll(
-                "[data-align]"
-            )
-            .forEach(function (button) {
-
-                button.addEventListener(
-                    "mousedown",
-                    function (event) {
-
-                        event.preventDefault();
-
-                    }
-                );
-
-                button.addEventListener(
-                    "click",
-                    function () {
-
-                        restoreSelection();
-
-                        execute(
-                            button.dataset.align
-                        );
-
-                        closePopovers();
-                    }
-                );
-            });
-    }
-
-    /*
-     * --------------------------------------------------
-     * LINK
-     * --------------------------------------------------
-     */
-
     function insertLink() {
 
         restoreSelection();
@@ -749,7 +668,6 @@ document.addEventListener("DOMContentLoaded", function () {
             !url ||
             url.trim() === ""
         ) {
-
             return;
         }
 
@@ -758,12 +676,6 @@ document.addEventListener("DOMContentLoaded", function () {
             url.trim()
         );
     }
-
-    /*
-     * --------------------------------------------------
-     * SIGNATURE
-     * --------------------------------------------------
-     */
 
     function insertSignature() {
 
@@ -791,7 +703,6 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
         if (!signature) {
-
             signature =
                 config.signatures[0];
         }
@@ -837,21 +748,7 @@ document.addEventListener("DOMContentLoaded", function () {
         syncBody();
     }
 
-    /*
-     * --------------------------------------------------
-     * EMOJI PICKER
-     * --------------------------------------------------
-     *
-     * IMPORTANT:
-     * This version does NOT depend completely on
-     * /EmojiManagement/GetActiveEmojis.
-     *
-     * If the server endpoint is unavailable,
-     * the normal emoji list still appears.
-     */
-
     const fallbackEmojis = [
-
         "😀", "😃", "😄", "😁", "😆", "😅",
         "😂", "🤣", "😊", "😇", "🙂", "🙃",
         "😉", "😌", "😍", "🥰", "😘", "😗",
@@ -865,7 +762,6 @@ document.addEventListener("DOMContentLoaded", function () {
         "🤔", "🫡", "🤭", "🤫", "🤥", "😶",
         "😐", "😑", "😬", "🙄", "😯", "😦",
         "😧", "😮", "😲", "🥱", "😴", "🤤",
-
         "❤️", "🧡", "💛", "💚", "💙", "💜",
         "🖤", "🤍", "🤎", "💔", "❣️", "💕",
         "💞", "💓", "💗", "💖", "💘", "💝",
@@ -874,7 +770,6 @@ document.addEventListener("DOMContentLoaded", function () {
         "👏", "🙌", "🙏", "💪", "🤝", "👌",
         "✌️", "🤞", "🤟", "🤘", "👋", "💐",
         "🌹", "🌸", "🌺", "🌻", "🌷",
-
         "☀️", "🌈", "☁️", "❄️", "☔",
         "🌙", "🌍", "🍎", "🍕", "🍔", "🍟",
         "🍰", "🎂", "🍩", "☕", "🍵", "🥤",
@@ -884,7 +779,7 @@ document.addEventListener("DOMContentLoaded", function () {
         "❌", "⚠️", "❗", "❓", "💬", "📌"
     ];
 
-    function createEmojiPicker() {
+    function openEmojiPicker() {
 
         const existing =
             document.getElementById(
@@ -906,10 +801,6 @@ document.addEventListener("DOMContentLoaded", function () {
         picker.id =
             "mailEmojiPicker";
 
-        /*
-         * Inline styling ensures that emoji picker
-         * works even if no special CSS exists.
-         */
         picker.style.position =
             "fixed";
 
@@ -927,6 +818,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
         picker.style.padding =
             "12px";
+
+        picker.style.boxSizing =
+            "border-box";
 
         picker.style.background =
             "#ffffff";
@@ -960,7 +854,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 toolbarButton.getBoundingClientRect();
 
             let top =
-                rect.bottom + 8;
+                rect.top - 308;
 
             let left =
                 rect.left;
@@ -969,22 +863,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 left + 340 >
                 window.innerWidth
             ) {
-
                 left =
                     window.innerWidth - 350;
             }
 
             if (left < 5) {
                 left = 5;
-            }
-
-            if (
-                top + 300 >
-                window.innerHeight
-            ) {
-
-                top =
-                    rect.top - 308;
             }
 
             if (top < 5) {
@@ -996,6 +880,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             picker.style.left =
                 left + "px";
+
         }
         else {
 
@@ -1050,16 +935,13 @@ document.addEventListener("DOMContentLoaded", function () {
                 button.addEventListener(
                     "mousedown",
                     function (event) {
-
                         event.preventDefault();
-
                     }
                 );
 
                 button.addEventListener(
                     "mouseenter",
                     function () {
-
                         button.style.background =
                             "#f3f4f6";
                     }
@@ -1068,7 +950,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 button.addEventListener(
                     "mouseleave",
                     function () {
-
                         button.style.background =
                             "#ffffff";
                     }
@@ -1098,21 +979,6 @@ document.addEventListener("DOMContentLoaded", function () {
             picker
         );
     }
-
-    function openEmojiPicker() {
-
-        /*
-         * First show the local picker immediately.
-         * This guarantees the button works.
-         */
-        createEmojiPicker();
-    }
-
-    /*
-     * --------------------------------------------------
-     * INSERT TEXT AT CURSOR
-     * --------------------------------------------------
-     */
 
     function insertTextAtCursor(text) {
 
@@ -1166,10 +1032,6 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
-        /*
-         * Fallback:
-         * append emoji at the end.
-         */
         editor.appendChild(
             document.createTextNode(
                 text
@@ -1179,27 +1041,11 @@ document.addEventListener("DOMContentLoaded", function () {
         syncBody();
     }
 
-    /*
-     * --------------------------------------------------
-     * EDITOR EVENTS
-     * --------------------------------------------------
-     */
-
     editor.addEventListener(
         "input",
         function () {
 
             syncBody();
-
-        }
-    );
-
-    editor.addEventListener(
-        "keyup",
-        function () {
-
-            syncBody();
-
         }
     );
 
@@ -1208,7 +1054,6 @@ document.addEventListener("DOMContentLoaded", function () {
         function () {
 
             saveSelection();
-
         }
     );
 
@@ -1217,7 +1062,7 @@ document.addEventListener("DOMContentLoaded", function () {
         function () {
 
             saveSelection();
-
+            syncBody();
         }
     );
 
@@ -1226,15 +1071,8 @@ document.addEventListener("DOMContentLoaded", function () {
         function () {
 
             saveSelection();
-
         }
     );
-
-    /*
-     * --------------------------------------------------
-     * CLOSE POPOVERS / EMOJI
-     * --------------------------------------------------
-     */
 
     document.addEventListener(
         "click",
@@ -1260,7 +1098,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 clickedPopover ||
                 clickedEmoji
             ) {
-
                 return;
             }
 
@@ -1272,17 +1109,27 @@ document.addEventListener("DOMContentLoaded", function () {
                 );
 
             if (picker) {
-
                 picker.remove();
             }
         }
     );
 
-    /*
-     * --------------------------------------------------
-     * FORM SUBMIT
-     * --------------------------------------------------
-     */
+    window.addEventListener(
+        "resize",
+        function () {
+
+            const picker =
+                document.getElementById(
+                    "mailEmojiPicker"
+                );
+
+            if (picker) {
+
+                picker.remove();
+
+            }
+        }
+    );
 
     form.addEventListener(
         "submit",
@@ -1310,23 +1157,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 return;
             }
-
-            /*
-             * Make absolutely sure all attachments
-             * are synchronized before form submission.
-             */
-            if (
-                window.mailAttachmentManager &&
-                typeof window.mailAttachmentManager.getFiles ===
-                "function"
-            ) {
-
-                /*
-                 * mail-attachments.js already keeps
-                 * the real input synchronized.
-                 */
-            }
         }
     );
-
 });

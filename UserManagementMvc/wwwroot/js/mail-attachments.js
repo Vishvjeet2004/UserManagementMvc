@@ -3,37 +3,57 @@
 document.addEventListener("DOMContentLoaded", function () {
 
     const fileInput =
-        document.getElementById("mailAttachmentInput");
+        document.getElementById(
+            "mailAttachmentInput"
+        );
 
     const fileList =
-        document.getElementById("mailAttachmentList");
+        document.getElementById(
+            "mailAttachmentList"
+        );
 
     const emptyMessage =
-        document.getElementById("mailAttachmentEmpty");
+        document.getElementById(
+            "mailAttachmentEmpty"
+        );
 
     const countElement =
-        document.getElementById("mailAttachmentCount");
+        document.getElementById(
+            "mailAttachmentCount"
+        );
+
+    const attachmentPanel =
+        document.getElementById(
+            "mailAttachmentsPanel"
+        );
 
     const form =
-        document.getElementById("mailComposeForm");
+        document.getElementById(
+            "mailComposeForm"
+        );
 
-    if (!fileInput || !fileList || !emptyMessage || !countElement) {
-        console.warn("Mail attachment elements were not found.");
+    if (
+        !fileInput ||
+        !fileList ||
+        !emptyMessage ||
+        !countElement
+    ) {
+        console.warn(
+            "Mail attachment elements were not found."
+        );
+
         return;
     }
 
     const MAX_FILES = 10;
-    const MAX_FILE_SIZE = 25 * 1024 * 1024;
 
-    /*
-     * IMPORTANT:
-     * Keep selected files separately.
-     * Do not depend on the browser's original FileList
-     * because selecting another file normally replaces it.
-     */
+    const MAX_FILE_SIZE =
+        25 * 1024 * 1024;
+
     let selectedFiles = [];
 
     function fileKey(file) {
+
         return [
             file.name,
             file.size,
@@ -48,15 +68,35 @@ document.addEventListener("DOMContentLoaded", function () {
             return bytes + " B";
         }
 
-        if (bytes < 1024 * 1024) {
-            return (bytes / 1024).toFixed(1) + " KB";
+        if (
+            bytes <
+            1024 * 1024
+        ) {
+            return (
+                bytes / 1024
+            ).toFixed(1) +
+                " KB";
         }
 
-        if (bytes < 1024 * 1024 * 1024) {
-            return (bytes / 1024 / 1024).toFixed(1) + " MB";
+        if (
+            bytes <
+            1024 * 1024 * 1024
+        ) {
+            return (
+                bytes /
+                1024 /
+                1024
+            ).toFixed(1) +
+                " MB";
         }
 
-        return (bytes / 1024 / 1024 / 1024).toFixed(1) + " GB";
+        return (
+            bytes /
+            1024 /
+            1024 /
+            1024
+        ).toFixed(1) +
+            " GB";
     }
 
     function getFileIcon(fileName) {
@@ -72,13 +112,6 @@ document.addEventListener("DOMContentLoaded", function () {
             case "pdf":
                 return "📕";
 
-            case "jpg":
-            case "jpeg":
-            case "png":
-            case "gif":
-            case "webp":
-                return "🖼️";
-
             case "doc":
             case "docx":
                 return "📘";
@@ -91,231 +124,300 @@ document.addEventListener("DOMContentLoaded", function () {
             case "pptx":
                 return "📙";
 
-            case "txt":
-                return "📄";
+            case "jpg":
+            case "jpeg":
+            case "png":
+            case "gif":
+            case "webp":
+                return "🖼️";
 
             case "zip":
                 return "🗜️";
+
+            case "txt":
+                return "📄";
 
             default:
                 return "📎";
         }
     }
 
-    /*
-     * Put all selected files back into the actual
-     * <input type="file" multiple>.
-     *
-     * This is the important part:
-     * ASP.NET Core will receive every file as Attachments.
-     */
-    function syncInputFiles() {
+    function updateAttachmentPanel() {
 
-        try {
-
-            const dataTransfer =
-                new DataTransfer();
-
-            selectedFiles.forEach(function (file) {
-                dataTransfer.items.add(file);
-            });
-
-            fileInput.files =
-                dataTransfer.files;
-
+        if (!attachmentPanel) {
+            return;
         }
-        catch (error) {
-
-            console.error(
-                "Unable to synchronize attachment files:",
-                error
-            );
-        }
-    }
-
-    function renderAttachments() {
-
-        fileList.innerHTML = "";
-
-        countElement.textContent =
-            selectedFiles.length.toString();
 
         if (selectedFiles.length === 0) {
 
-            emptyMessage.style.display = "block";
+            attachmentPanel.hidden = true;
+
+            attachmentPanel.style.display =
+                "none";
 
             return;
         }
 
-        emptyMessage.style.display = "none";
+        attachmentPanel.hidden = false;
 
-        selectedFiles.forEach(function (file, index) {
+        attachmentPanel.style.display =
+            "";
+    }
 
-            const row =
-                document.createElement("div");
+    function syncInputFiles() {
 
-            row.className =
-                "mail-attachment-item";
+        const dataTransfer =
+            new DataTransfer();
 
-            const info =
-                document.createElement("div");
+        selectedFiles.forEach(
+            function (file) {
 
-            info.className =
-                "mail-attachment-info";
+                dataTransfer.items.add(
+                    file
+                );
+            }
+        );
 
-            const icon =
-                document.createElement("span");
+        fileInput.files =
+            dataTransfer.files;
+    }
 
-            icon.className =
-                "mail-attachment-icon";
+    function renderAttachments() {
 
-            icon.textContent =
-                getFileIcon(file.name);
+        fileList.innerHTML =
+            "";
 
-            const name =
-                document.createElement("span");
+        countElement.textContent =
+            selectedFiles.length
+                .toString();
 
-            name.className =
-                "mail-attachment-name";
+        if (
+            selectedFiles.length === 0
+        ) {
 
-            name.textContent =
-                file.name;
+            emptyMessage.style.display =
+                "block";
 
-            const size =
-                document.createElement("span");
+            updateAttachmentPanel();
 
-            size.className =
-                "mail-attachment-size";
+            return;
+        }
 
-            size.textContent =
-                formatFileSize(file.size);
+        emptyMessage.style.display =
+            "none";
 
-            const remove =
-                document.createElement("button");
+        selectedFiles.forEach(
+            function (file, index) {
 
-            remove.type = "button";
+                const row =
+                    document.createElement(
+                        "div"
+                    );
 
-            remove.className =
-                "mail-attachment-remove";
+                row.className =
+                    "mail-attachment-item";
 
-            remove.title =
-                "Remove attachment";
+                const info =
+                    document.createElement(
+                        "div"
+                    );
 
-            remove.setAttribute(
-                "aria-label",
-                "Remove " + file.name
-            );
+                info.className =
+                    "mail-attachment-info";
 
-            remove.textContent = "×";
+                const icon =
+                    document.createElement(
+                        "span"
+                    );
 
-            remove.dataset.index =
-                index.toString();
+                icon.className =
+                    "mail-attachment-icon";
 
-            info.appendChild(icon);
-            info.appendChild(name);
-            info.appendChild(size);
+                icon.textContent =
+                    getFileIcon(
+                        file.name
+                    );
 
-            row.appendChild(info);
-            row.appendChild(remove);
+                const name =
+                    document.createElement(
+                        "span"
+                    );
 
-            fileList.appendChild(row);
-        });
+                name.className =
+                    "mail-attachment-name";
+
+                name.textContent =
+                    file.name;
+
+                name.title =
+                    file.name;
+
+                const size =
+                    document.createElement(
+                        "span"
+                    );
+
+                size.className =
+                    "mail-attachment-size";
+
+                size.textContent =
+                    formatFileSize(
+                        file.size
+                    );
+
+                const removeButton =
+                    document.createElement(
+                        "button"
+                    );
+
+                removeButton.type =
+                    "button";
+
+                removeButton.className =
+                    "mail-attachment-remove";
+
+                removeButton.dataset.index =
+                    index.toString();
+
+                removeButton.title =
+                    "Remove attachment";
+
+                removeButton.textContent =
+                    "×";
+
+                info.appendChild(
+                    icon
+                );
+
+                info.appendChild(
+                    name
+                );
+
+                info.appendChild(
+                    size
+                );
+
+                row.appendChild(
+                    info
+                );
+
+                row.appendChild(
+                    removeButton
+                );
+
+                fileList.appendChild(
+                    row
+                );
+            }
+        );
+
+        updateAttachmentPanel();
     }
 
     function addFiles(files) {
 
-        if (!files || files.length === 0) {
+        if (
+            !files ||
+            files.length === 0
+        ) {
             return;
         }
 
         const existingKeys =
             new Set(
-                selectedFiles.map(fileKey)
+                selectedFiles.map(
+                    fileKey
+                )
             );
 
         let added = 0;
 
-        Array.from(files).forEach(function (file) {
+        Array.from(files).forEach(
+            function (file) {
 
-            if (selectedFiles.length >= MAX_FILES) {
+                if (
+                    selectedFiles.length >=
+                    MAX_FILES
+                ) {
+                    return;
+                }
 
-                return;
-            }
+                if (
+                    !file ||
+                    file.size <= 0
+                ) {
+                    return;
+                }
 
-            if (!file || file.size <= 0) {
+                if (
+                    file.size >
+                    MAX_FILE_SIZE
+                ) {
 
-                return;
-            }
+                    alert(
+                        '"' +
+                        file.name +
+                        '" is larger than 25 MB.'
+                    );
 
-            if (file.size > MAX_FILE_SIZE) {
+                    return;
+                }
 
-                alert(
-                    '"' +
-                    file.name +
-                    '" is larger than 25 MB.'
+                const key =
+                    fileKey(file);
+
+                if (
+                    existingKeys.has(
+                        key
+                    )
+                ) {
+                    return;
+                }
+
+                selectedFiles.push(
+                    file
                 );
 
-                return;
+                existingKeys.add(
+                    key
+                );
+
+                added++;
             }
-
-            const key =
-                fileKey(file);
-
-            if (existingKeys.has(key)) {
-
-                return;
-            }
-
-            selectedFiles.push(file);
-
-            existingKeys.add(key);
-
-            added++;
-        });
-
-        /*
-         * Do NOT set fileInput.value = "" here.
-         *
-         * That was causing problems with maintaining
-         * the selected files.
-         */
+        );
 
         syncInputFiles();
 
         renderAttachments();
 
-        if (selectedFiles.length >= MAX_FILES) {
+        if (
+            selectedFiles.length >=
+            MAX_FILES &&
+            added > 0
+        ) {
 
-            if (added > 0) {
-
-                alert(
-                    "Maximum 10 files can be attached to one email."
-                );
-            }
+            alert(
+                "Maximum 10 files can be attached to one email."
+            );
         }
     }
 
-    /*
-     * File picker
-     */
     fileInput.addEventListener(
         "change",
         function (event) {
 
             const files =
-                event.target.files;
+                Array.from(
+                    event.target.files || []
+                );
 
-            if (!files || files.length === 0) {
-                return;
-            }
+            fileInput.value =
+                "";
 
             addFiles(files);
         }
     );
 
-    /*
-     * Remove individual attachment
-     */
     fileList.addEventListener(
         "click",
         function (event) {
@@ -342,7 +444,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
 
-            selectedFiles.splice(index, 1);
+            selectedFiles.splice(
+                index,
+                1
+            );
 
             syncInputFiles();
 
@@ -350,10 +455,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     );
 
-    /*
-     * Before submit, synchronize once again.
-     * This guarantees ASP.NET Core receives all files.
-     */
     if (form) {
 
         form.addEventListener(
@@ -361,28 +462,21 @@ document.addEventListener("DOMContentLoaded", function () {
             function () {
 
                 syncInputFiles();
-
             },
             true
         );
     }
 
-    /*
-     * Expose a small helper so mail-composer.js
-     * can open the attachment picker.
-     */
     window.mailAttachmentManager = {
 
         open: function () {
 
             fileInput.click();
-
         },
 
         getFiles: function () {
 
             return selectedFiles.slice();
-
         },
 
         clear: function () {
@@ -392,10 +486,8 @@ document.addEventListener("DOMContentLoaded", function () {
             syncInputFiles();
 
             renderAttachments();
-
         }
     };
 
     renderAttachments();
-
 });

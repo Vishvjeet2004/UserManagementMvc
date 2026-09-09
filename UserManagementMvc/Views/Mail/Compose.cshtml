@@ -34,322 +34,409 @@
 }
 
 <style>
-    /* Compose page main container */
     .mail-compose-page {
         width: 100%;
-        min-height: calc(100vh - 80px);
-        padding: 28px;
+        height: calc(100vh - 72px);
+        min-height: 560px;
+        padding: 18px;
         box-sizing: border-box;
         background: #f5f7fb;
     }
 
-    /* Compose mail card */
     .mail-compose-card {
         width: 100%;
         max-width: 1180px;
+        height: 100%;
+        min-height: 0;
         margin: 0 auto;
+        display: flex;
+        flex-direction: column;
         background: #ffffff;
         border: 1px solid #e1e5ea;
-        border-radius: 14px;
+        border-radius: 10px;
         box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
         overflow: hidden;
     }
 
-    /* Compose header */
     .mail-compose-header {
+        flex: 0 0 auto;
+        min-height: 44px;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 20px;
-        padding: 20px 24px;
-        border-bottom: 1px solid #e5e7eb;
-        background: #ffffff;
+        gap: 12px;
+        padding: 0 20px;
+        background: #f1f5fb;
+        border-bottom: 1px solid #e3e7ed;
     }
 
     .mail-compose-header h1 {
         margin: 0;
         color: #202124;
-        font-size: 28px;
-        font-weight: 700;
-        line-height: 1.25;
+        font-size: 17px;
+        font-weight: 500;
+        line-height: 44px;
     }
 
     .mail-compose-subtitle {
-        margin-top: 5px;
-        color: #6b7280;
-        font-size: 14px;
+        display: none;
     }
 
-    /* Close compose button */
     .mail-compose-close {
+        width: 34px;
+        height: 34px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 36px;
-        height: 36px;
         border: 0;
         border-radius: 50%;
         background: transparent;
-        color: #5f6368;
-        text-decoration: none;
-        font-size: 25px;
+        color: #4b5563;
+        font-size: 23px;
         line-height: 1;
+        text-decoration: none;
         cursor: pointer;
     }
 
     .mail-compose-close:hover {
-        background: #f1f3f4;
-        color: #202124;
+        background: #e5e7eb;
+        color: #111827;
     }
 
-    /* Compose form */
     .mail-compose-form {
-        padding: 22px 24px 24px;
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+        overflow: hidden;
     }
 
-    /* Validation summary */
     .mail-validation-summary {
-        margin-bottom: 14px;
-        padding: 10px 12px;
-        border-radius: 8px;
+        flex: 0 0 auto;
+        margin: 8px 20px 0;
+        padding: 7px 10px;
+        border-radius: 6px;
         background: #fff4f4;
         color: #b42318;
-        font-size: 14px;
+        font-size: 13px;
     }
 
     .mail-validation-summary:empty {
         display: none;
     }
 
-    /* Recipient row */
     .mail-recipient-row {
+        flex: 0 0 auto;
         display: flex;
-        align-items: flex-end;
-        gap: 12px;
+        align-items: center;
+        gap: 8px;
         width: 100%;
+        padding: 8px 20px 0;
+        box-sizing: border-box;
     }
 
     .mail-field {
+        flex: 0 0 auto;
         width: 100%;
-        margin-bottom: 14px;
+        margin: 0;
     }
 
-    .mail-field-main {
-        flex: 1;
+    .mail-recipient-row .mail-field-main {
+        flex: 1 1 auto;
         min-width: 0;
     }
 
     .mail-field label {
-        display: block;
-        margin-bottom: 6px;
-        color: #374151;
-        font-size: 14px;
-        font-weight: 600;
+        display: none;
     }
 
     .mail-input {
         display: block;
         width: 100%;
-        min-height: 44px;
-        padding: 10px 13px;
+        min-height: 42px;
+        padding: 8px 0;
         box-sizing: border-box;
-        border: 1px solid #d1d5db;
-        border-radius: 8px;
+        border: 0;
+        border-bottom: 1px solid #e1e5ea;
+        border-radius: 0;
         outline: none;
         background: #ffffff;
         color: #202124;
         font-family: inherit;
         font-size: 15px;
-        transition: border-color 0.15s ease,
-                    box-shadow 0.15s ease;
     }
 
     .mail-input:hover {
-        border-color: #b8bec7;
+        border-bottom-color: #c5cbd3;
     }
 
     .mail-input:focus {
-        border-color: #2563eb;
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        border-bottom-color: #2563eb;
+        box-shadow: none;
     }
 
     .mail-input::placeholder {
-        color: #9ca3af;
+        color: #6b7280;
     }
 
-    /* Cc and Bcc buttons */
     .mail-recipient-actions {
+        flex: 0 0 auto;
         display: flex;
         align-items: center;
-        gap: 7px;
-        padding-bottom: 14px;
-        flex: 0 0 auto;
+        gap: 4px;
     }
 
     .mail-small-button {
-        min-width: 48px;
-        min-height: 36px;
-        padding: 6px 12px;
-        border: 1px solid #d1d5db;
-        border-radius: 7px;
-        background: #ffffff;
-        color: #374151;
-        font-family: inherit;
+        min-width: 42px;
+        min-height: 32px;
+        padding: 4px 8px;
+        border: 0;
+        border-radius: 5px;
+        background: transparent;
+        color: #5f6368;
         font-size: 13px;
-        font-weight: 600;
+        font-weight: 500;
         cursor: pointer;
     }
 
     .mail-small-button:hover {
-        background: #f3f4f6;
-        border-color: #bfc5cd;
+        background: #f1f3f4;
+        color: #202124;
     }
 
-    /* Hidden Cc/Bcc fields */
     .mail-hidden-field {
         display: none;
+        flex: 0 0 auto;
+        padding: 0 20px;
+        box-sizing: border-box;
     }
 
     .mail-hidden-field.is-visible {
         display: block;
     }
 
-    /* Field validation */
+    .mail-hidden-field .mail-input {
+        min-height: 40px;
+    }
+
     .mail-field-error {
         display: block;
-        margin-top: 5px;
+        margin-top: 3px;
         color: #dc2626;
-        font-size: 13px;
+        font-size: 12px;
     }
 
-    /* Editor panel */
+    .mail-compose-form > .mail-field {
+        flex: 0 0 auto;
+        padding: 0 20px;
+        box-sizing: border-box;
+    }
+
+    .mail-compose-form > .mail-field .mail-input {
+        min-height: 42px;
+    }
+
     .mail-editor-panel {
         position: relative;
+        flex: 1 1 auto;
+        min-height: 0;
         width: 100%;
-        margin-top: 5px;
-    }
-
-    /* Toolbar */
-    .mail-toolbar {
+        margin-top: 0;
         display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 5px;
-        width: 100%;
-        padding: 10px;
-        box-sizing: border-box;
-        border: 1px solid #dfe3e8;
-        border-radius: 9px 9px 0 0;
-        background: #f8f9fa;
+        flex-direction: column;
+        overflow: visible;
     }
 
-    /* Toolbar buttons */
+    .mail-editor-wrapper {
+        order: 1;
+        position: relative;
+        flex: 1 1 auto;
+        min-height: 0;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .mail-editor {
+        flex: 1 1 auto;
+        width: 100%;
+        min-height: 180px;
+        max-height: none;
+        padding: 14px 20px;
+        box-sizing: border-box;
+        overflow-y: auto;
+        overflow-x: hidden;
+        border: 0;
+        border-top: 1px solid #e1e5ea;
+        border-bottom: 0;
+        border-radius: 0;
+        outline: none;
+        background: #ffffff;
+        color: #202124;
+        font-family: Arial, sans-serif;
+        font-size: 15px;
+        line-height: 1.6;
+    }
+
+    .mail-editor:focus {
+        border-color: #e1e5ea;
+        box-shadow: none;
+    }
+
+    .mail-editor:empty::before {
+        content: attr(data-placeholder);
+        color: #9ca3af;
+        pointer-events: none;
+    }
+
+    .mail-editor img {
+        max-width: 100%;
+        height: auto;
+    }
+
+    .mail-editor a {
+        color: #2563eb;
+    }
+
+    .mail-editor blockquote {
+        margin: 10px 0;
+        padding-left: 12px;
+        border-left: 3px solid #d1d5db;
+        color: #6b7280;
+    }
+
+    .mail-body-field {
+        position: absolute;
+        left: -99999px;
+        top: -99999px;
+        width: 1px;
+        height: 1px;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .mail-editor-panel > .mail-field-error {
+        order: 3;
+        flex: 0 0 auto;
+        padding: 0 20px;
+    }
+
+    .mail-toolbar {
+        order: 2;
+        flex: 0 0 auto;
+        width: 100%;
+        min-height: 50px;
+        display: flex;
+        align-items: center;
+        flex-wrap: nowrap;
+        gap: 0;
+        padding: 7px 10px;
+        box-sizing: border-box;
+        border: 0;
+        border-top: 1px solid #e1e5ea;
+        border-bottom: 1px solid #e1e5ea;
+        border-radius: 0;
+        background: #eef3fb;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: thin;
+    }
+
+    .mail-toolbar::-webkit-scrollbar {
+        height: 5px;
+    }
+
     .mail-toolbar-button {
+        flex: 0 0 auto;
+        min-width: 36px;
+        height: 36px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-height: 36px;
-        padding: 6px 10px;
-        border: 1px solid #d5d9df;
+        gap: 4px;
+        padding: 5px 8px;
+        border: 0;
         border-radius: 6px;
-        background: #ffffff;
-        color: #374151;
+        background: transparent;
+        color: #4b5563;
         font-family: inherit;
         font-size: 13px;
         font-weight: 500;
-        line-height: 1.2;
+        line-height: 1;
         white-space: nowrap;
         cursor: pointer;
-        transition: background 0.15s ease,
-                    border-color 0.15s ease,
-                    transform 0.05s ease,
-                    box-shadow 0.15s ease;
+        transition: background 0.15s ease;
     }
 
     .mail-toolbar-button:hover {
-        background: #f1f3f4;
-        border-color: #c5cbd3;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        background: #dfe7f3;
+        color: #202124;
     }
 
     .mail-toolbar-button:active {
-        background: #e8eaed;
-        transform: translateY(1px);
+        background: #d5dfed;
     }
 
-    /* Toolbar icon */
     .mail-toolbar-icon {
         display: inline-flex;
         align-items: center;
         justify-content: center;
         min-width: 20px;
-        margin-right: 5px;
-        color: #202124;
-        font-size: 15px;
+        color: #4b5563;
+        font-size: 17px;
         line-height: 1;
-    }
-
-    /* Bold icon */
-    .mail-toolbar-icon.tool-icon-bold {
-        font-weight: 900;
-    }
-
-    /* Italic icon */
-    .mail-toolbar-icon.tool-icon-italic {
-        font-style: italic;
-        font-weight: 700;
-    }
-
-    /* Underline icon */
-    .mail-toolbar-icon.tool-icon-underline {
-        font-weight: 700;
-        text-decoration: underline;
-        text-decoration-thickness: 2px;
-        text-underline-offset: 2px;
-    }
-
-    /* Strike-through icon */
-    .mail-toolbar-icon.tool-icon-strike {
-        font-weight: 700;
-        text-decoration: line-through;
-        text-decoration-thickness: 2px;
-    }
-
-    /* Font icon */
-    .mail-toolbar-icon.tool-icon-font {
-        font-family: Georgia, serif;
-        font-weight: 700;
-    }
-
-    /* Font size icon */
-    .mail-toolbar-icon.tool-icon-font-size {
-        font-weight: 700;
-        font-size: 14px;
-    }
-
-    /* Text color icon */
-    .mail-toolbar-icon.tool-icon-color {
-        font-weight: 900;
-        text-decoration: underline;
-        text-decoration-thickness: 3px;
-        text-decoration-color: #2563eb;
-        text-underline-offset: 2px;
-    }
-
-    /* Remove formatting icon */
-    .mail-toolbar-icon.tool-icon-remove-format {
-        font-weight: 700;
-        text-decoration: line-through;
     }
 
     .mail-toolbar-label {
         display: inline-block;
+        max-width: 90px;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
-    /* Toolbar popovers */
+    .tool-icon-bold {
+        font-weight: 900;
+    }
+
+    .tool-icon-italic {
+        font-style: italic;
+        font-weight: 700;
+    }
+
+    .tool-icon-underline {
+        font-weight: 700;
+        text-decoration: underline;
+    }
+
+    .tool-icon-strike {
+        font-weight: 700;
+        text-decoration: line-through;
+    }
+
+    .tool-icon-font {
+        font-family: Georgia, serif;
+        font-weight: 700;
+    }
+
+    .tool-icon-font-size {
+        font-weight: 700;
+    }
+
+    .tool-icon-color {
+        font-weight: 900;
+        text-decoration: underline;
+        text-decoration-thickness: 3px;
+    }
+
+    .tool-icon-remove-format {
+        font-weight: 700;
+        text-decoration: line-through;
+    }
+
     .mail-popover {
         position: absolute;
-        z-index: 1000;
+        z-index: 99999;
         min-width: 160px;
         padding: 8px;
         border: 1px solid #d9dde3;
@@ -385,7 +472,6 @@
         background: #f3f4f6;
     }
 
-    /* Text color popover */
     .mail-color-popover {
         display: flex;
         flex-wrap: wrap;
@@ -406,82 +492,20 @@
         font-size: 18px;
     }
 
-    /* Editor wrapper */
-    .mail-editor-wrapper {
-        position: relative;
-        width: 100%;
-    }
-
-    /* Rich text editor */
-    .mail-editor {
-        width: 100%;
-        min-height: 300px;
-        max-height: 520px;
-        padding: 15px 16px;
-        box-sizing: border-box;
-        overflow-y: auto;
-        border: 1px solid #dfe3e8;
-        border-top: 0;
-        border-radius: 0 0 9px 9px;
-        outline: none;
-        background: #ffffff;
-        color: #202124;
-        font-family: Arial, sans-serif;
-        font-size: 15px;
-        line-height: 1.6;
-    }
-
-    .mail-editor:focus {
-        border-color: #2563eb;
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
-    }
-
-    .mail-editor:empty::before {
-        content: attr(data-placeholder);
-        color: #9ca3af;
-        pointer-events: none;
-    }
-
-    .mail-editor img {
-        max-width: 100%;
-        height: auto;
-    }
-
-    .mail-editor a {
-        color: #2563eb;
-    }
-
-    .mail-editor blockquote {
-        margin: 10px 0;
-        padding-left: 12px;
-        border-left: 3px solid #d1d5db;
-        color: #6b7280;
-    }
-
-    /* Hidden textarea used for model binding */
-    .mail-body-field {
-        position: absolute;
-        left: -99999px;
-        top: -99999px;
-        width: 1px;
-        height: 1px;
-        opacity: 0;
-        pointer-events: none;
-    }
-
-    /* Existing attachments */
-    .mail-existing-attachments {
-        margin-top: 18px;
-        padding: 13px 14px;
+    .mail-existing-attachments,
+    .mail-attachments-panel {
+        flex: 0 0 auto;
+        margin: 10px 20px 0;
+        padding: 10px 12px;
         border: 1px solid #e1e5ea;
-        border-radius: 10px;
-        background: #ffffff;
+        border-radius: 8px;
+        background: #fafbfc;
     }
 
-    .mail-existing-title {
-        margin-bottom: 9px;
+    .mail-existing-title,
+    .mail-attachments-title {
         color: #202124;
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 600;
     }
 
@@ -489,20 +513,14 @@
         display: flex;
         align-items: center;
         gap: 9px;
-        width: 100%;
-        padding: 8px 4px;
-        box-sizing: border-box;
-        border-bottom: 1px solid #f0f1f2;
+        padding: 6px 0;
         color: #2563eb;
         text-decoration: none;
+        border-bottom: 1px solid #f0f1f2;
     }
 
     .mail-existing-attachment:last-child {
         border-bottom: 0;
-    }
-
-    .mail-existing-attachment:hover {
-        background: #f8fafc;
     }
 
     .mail-existing-name {
@@ -519,90 +537,70 @@
         font-size: 12px;
     }
 
-    /* Attachments panel */
-    .mail-attachments-panel {
-        width: 100%;
-        margin-top: 18px;
-        padding: 15px;
-        box-sizing: border-box;
-        border: 1px solid #e1e5ea;
-        border-radius: 10px;
-        background: #fafbfc;
-    }
-
     .mail-attachments-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 15px;
-        margin-bottom: 12px;
-    }
-
-    .mail-attachments-title {
-        color: #202124;
-        font-size: 14px;
-        font-weight: 700;
+        gap: 12px;
+        margin-bottom: 8px;
     }
 
     .mail-attachments-subtitle {
-        margin-top: 3px;
+        margin-top: 2px;
         color: #6b7280;
-        font-size: 12px;
+        font-size: 11px;
     }
 
     .mail-attachment-add-button {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-height: 36px;
-        padding: 7px 13px;
+        min-height: 32px;
+        padding: 6px 10px;
         border: 1px solid #d5d9df;
         border-radius: 7px;
         background: #ffffff;
         color: #374151;
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 600;
         cursor: pointer;
         user-select: none;
-        white-space: nowrap;
     }
 
     .mail-attachment-add-button:hover {
         background: #f1f3f4;
-        border-color: #c5cbd3;
     }
 
     .mail-attachment-list {
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 6px;
     }
 
     .mail-attachment-item {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 12px;
-        width: 100%;
-        min-height: 44px;
-        padding: 8px 10px;
+        gap: 10px;
+        min-height: 38px;
+        padding: 6px 8px;
         box-sizing: border-box;
         border: 1px solid #e2e6eb;
-        border-radius: 8px;
+        border-radius: 7px;
         background: #ffffff;
     }
 
     .mail-attachment-info {
         display: flex;
         align-items: center;
-        gap: 9px;
+        gap: 8px;
         min-width: 0;
         flex: 1;
     }
 
     .mail-attachment-icon {
         flex: 0 0 auto;
-        font-size: 19px;
+        font-size: 17px;
     }
 
     .mail-attachment-name {
@@ -612,13 +610,13 @@
         text-overflow: ellipsis;
         white-space: nowrap;
         color: #202124;
-        font-size: 14px;
+        font-size: 13px;
     }
 
     .mail-attachment-size {
         flex: 0 0 auto;
         color: #6b7280;
-        font-size: 12px;
+        font-size: 11px;
     }
 
     .mail-attachment-remove {
@@ -626,14 +624,14 @@
         align-items: center;
         justify-content: center;
         flex: 0 0 auto;
-        width: 29px;
-        height: 29px;
+        width: 28px;
+        height: 28px;
         padding: 0;
         border: 0;
         border-radius: 50%;
         background: transparent;
         color: #6b7280;
-        font-size: 20px;
+        font-size: 19px;
         line-height: 1;
         cursor: pointer;
     }
@@ -644,33 +642,37 @@
     }
 
     .mail-attachment-empty {
-        padding: 12px 0 4px;
-        color: #6b7280;
-        font-size: 13px;
-    }
-
-    .mail-attachment-help {
-        display: block;
-        margin-top: 10px;
+        padding: 6px 0 2px;
         color: #6b7280;
         font-size: 12px;
     }
 
-    /* Compose footer */
+    .mail-attachment-help {
+        display: block;
+        margin-top: 7px;
+        color: #6b7280;
+        font-size: 11px;
+    }
+
     .mail-compose-footer {
+        flex: 0 0 auto;
+        min-height: 58px;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 12px;
-        margin-top: 20px;
-        padding-top: 16px;
-        border-top: 1px solid #e5e7eb;
+        gap: 10px;
+        margin: 0;
+        padding: 7px 20px;
+        box-sizing: border-box;
+        border-top: 0;
+        background: #ffffff;
     }
 
     .mail-footer-left {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 7px;
+        min-width: 0;
     }
 
     .mail-send-button,
@@ -679,12 +681,12 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-height: 42px;
-        padding: 9px 18px;
+        min-height: 40px;
+        padding: 8px 16px;
         box-sizing: border-box;
-        border-radius: 8px;
+        border-radius: 20px;
         font-family: inherit;
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 600;
         line-height: 1;
         text-decoration: none;
@@ -692,14 +694,15 @@
     }
 
     .mail-send-button {
-        border: 1px solid #2563eb;
-        background: #2563eb;
+        border: 1px solid #0b57d0;
+        background: #0b57d0;
         color: #ffffff;
     }
 
     .mail-send-button:hover {
-        border-color: #1d4ed8;
-        background: #1d4ed8;
+        border-color: #0842a0;
+        background: #0842a0;
+        color: #ffffff;
     }
 
     .mail-draft-button {
@@ -714,98 +717,104 @@
 
     .mail-cancel-button {
         border: 1px solid #d1d5db;
-        background: #f3f4f6;
+        background: #ffffff;
         color: #374151;
     }
 
     .mail-cancel-button:hover {
-        background: #e5e7eb;
+        background: #f3f4f6;
     }
 
-    /* Disabled button state */
-    .mail-send-button:disabled,
-    .mail-draft-button:disabled,
-    .mail-cancel-button:disabled,
-    .mail-small-button:disabled,
-    .mail-toolbar-button:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
+    .mail-compose-footer .mail-delete-button {
+        width: 38px;
+        height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 0;
+        border-radius: 50%;
+        background: transparent;
+        color: #5f6368;
+        font-size: 19px;
+        cursor: pointer;
     }
 
-    /* Mobile compose layout */
+    .mail-compose-footer .mail-delete-button:hover {
+        background: #f1f3f4;
+        color: #202124;
+    }
+
+    .mail-emoji-picker {
+        position: fixed !important;
+        z-index: 999999 !important;
+    }
+
     @@media (max-width: 900px) {
         .mail-compose-page {
-            padding: 15px;
+            height: calc(100vh - 64px);
+            padding: 0;
         }
 
         .mail-compose-card {
-            max-width: 100%;
+            max-width: none;
+            border-radius: 0;
         }
 
         .mail-compose-form {
-            padding: 18px;
+            padding: 0;
+        }
+
+        .mail-compose-header {
+            padding: 0 14px;
         }
 
         .mail-recipient-row {
-            align-items: stretch;
-            flex-direction: column;
-            gap: 0;
+            padding-left: 14px;
+            padding-right: 14px;
         }
 
-        .mail-recipient-actions {
-            padding-bottom: 8px;
+        .mail-compose-form > .mail-field {
+            padding-left: 14px;
+            padding-right: 14px;
         }
 
-        .mail-attachments-header {
-            align-items: flex-start;
-            flex-direction: column;
+        .mail-hidden-field {
+            padding-left: 14px;
+            padding-right: 14px;
         }
 
-        .mail-attachment-add-button {
-            width: 100%;
+        .mail-editor {
+            padding-left: 14px;
+            padding-right: 14px;
+        }
+
+        .mail-editor-panel > .mail-field-error {
+            padding-left: 14px;
+            padding-right: 14px;
         }
 
         .mail-compose-footer {
-            align-items: stretch;
-            flex-direction: column;
+            padding-left: 14px;
+            padding-right: 14px;
         }
 
-        .mail-footer-left {
-            width: 100%;
-        }
-
-        .mail-send-button,
-        .mail-draft-button,
-        .mail-cancel-button {
-            flex: 1;
+        .mail-attachments-panel,
+        .mail-existing-attachments {
+            margin-left: 14px;
+            margin-right: 14px;
         }
     }
 
     @@media (max-width: 600px) {
-        .mail-compose-page {
-            padding: 8px;
-        }
-
-        .mail-compose-header {
-            padding: 16px;
-        }
-
-        .mail-compose-header h1 {
-            font-size: 23px;
-        }
-
-        .mail-compose-form {
-            padding: 14px;
-        }
-
         .mail-toolbar {
-            padding: 7px;
+            min-height: 48px;
+            padding: 6px;
         }
 
         .mail-toolbar-button {
-            min-height: 32px;
-            padding: 5px 8px;
-            font-size: 12px;
+            min-width: 34px;
+            height: 34px;
+            padding: 4px 6px;
         }
 
         .mail-toolbar-label {
@@ -816,30 +825,27 @@
             margin-right: 0;
         }
 
-        .mail-editor {
-            min-height: 240px;
+        .mail-compose-footer {
+            min-height: 56px;
+            padding: 6px 10px;
         }
 
-        .mail-attachment-item {
-            align-items: flex-start;
+        .mail-send-button {
+            padding-left: 15px;
+            padding-right: 15px;
         }
 
-        .mail-attachment-info {
-            flex-wrap: wrap;
-        }
-
-        .mail-attachment-name {
-            max-width: 220px;
+        .mail-draft-button,
+        .mail-cancel-button {
+            display: none;
         }
 
         .mail-footer-left {
-            flex-direction: column;
+            width: 100%;
         }
 
-        .mail-send-button,
-        .mail-draft-button,
-        .mail-cancel-button {
-            width: 100%;
+        .mail-compose-footer .mail-delete-button {
+            flex: 0 0 auto;
         }
     }
 </style>
@@ -849,10 +855,8 @@
     <div class="mail-compose-card">
 
         <div class="mail-compose-header">
-
             <div>
-                <h1>Compose Mail</h1>
-
+                <h1>New Message</h1>
                 <div class="mail-compose-subtitle">
                     Write and send a new message
                 </div>
@@ -864,7 +868,6 @@
                title="Close">
                 ×
             </a>
-
         </div>
 
         <form asp-controller="Mail"
@@ -886,20 +889,15 @@
                  class="mail-validation-summary">
             </div>
 
-            <!-- Recipient field -->
             <div class="mail-recipient-row">
 
                 <div class="mail-field mail-field-main">
-
-                    <label asp-for="RecipientEmail">
-                        To
-                    </label>
 
                     <input asp-for="RecipientEmail"
                            class="mail-input"
                            list="mailRecipients"
                            autocomplete="off"
-                           placeholder="Recipient email address" />
+                           placeholder="Recipients" />
 
                     <datalist id="mailRecipients">
 
@@ -939,17 +937,12 @@
 
             </div>
 
-            <!-- Cc field -->
             <div id="ccField"
                  class="mail-field mail-hidden-field">
 
-                <label asp-for="CcEmails">
-                    Cc
-                </label>
-
                 <input asp-for="CcEmails"
                        class="mail-input"
-                       placeholder="Comma-separated email addresses" />
+                       placeholder="Cc" />
 
                 <span asp-validation-for="CcEmails"
                       class="mail-field-error">
@@ -957,17 +950,12 @@
 
             </div>
 
-            <!-- Bcc field -->
             <div id="bccField"
                  class="mail-field mail-hidden-field">
 
-                <label asp-for="BccEmails">
-                    Bcc
-                </label>
-
                 <input asp-for="BccEmails"
                        class="mail-input"
-                       placeholder="Comma-separated email addresses" />
+                       placeholder="Bcc" />
 
                 <span asp-validation-for="BccEmails"
                       class="mail-field-error">
@@ -975,12 +963,7 @@
 
             </div>
 
-            <!-- Subject field -->
             <div class="mail-field">
-
-                <label asp-for="Subject">
-                    Subject
-                </label>
 
                 <input asp-for="Subject"
                        class="mail-input"
@@ -993,7 +976,6 @@
 
             </div>
 
-            <!-- Rich text editor -->
             <div class="mail-editor-panel">
 
                 <div class="mail-toolbar"
@@ -1068,7 +1050,6 @@
 
                 </div>
 
-                <!-- Font popover -->
                 <div id="fontPopover"
                      class="mail-popover"
                      hidden>
@@ -1095,7 +1076,6 @@
 
                 </div>
 
-                <!-- Font size popover -->
                 <div id="fontSizePopover"
                      class="mail-popover"
                      hidden>
@@ -1122,7 +1102,6 @@
 
                 </div>
 
-                <!-- Color popover -->
                 <div id="colorPopover"
                      class="mail-popover mail-color-popover"
                      hidden>
@@ -1171,7 +1150,6 @@
 
                 </div>
 
-                <!-- Alignment popover -->
                 <div id="alignPopover"
                      class="mail-popover"
                      hidden>
@@ -1220,7 +1198,6 @@
 
             </div>
 
-            <!-- Existing attachments -->
             @if (Model.ExistingAttachments != null &&
                  Model.ExistingAttachments.Count > 0)
             {
@@ -1237,9 +1214,7 @@
                            asp-route-id="@attachment.Id"
                            class="mail-existing-attachment">
 
-                            <span>
-                                📎
-                            </span>
+                            <span>📎</span>
 
                             <span class="mail-existing-name">
                                 @attachment.OriginalFileName
@@ -1255,12 +1230,12 @@
                 </div>
             }
 
-            <!-- New attachments -->
-            <div class="mail-attachments-panel">
+            <div id="mailAttachmentsPanel" class="mail-attachments-panel" hidden>
 
                 <div class="mail-attachments-header">
 
                     <div>
+
                         <div class="mail-attachments-title">
                             Attachments
                             (<span id="mailAttachmentCount">0</span>)
@@ -1269,6 +1244,7 @@
                         <div class="mail-attachments-subtitle">
                             Add multiple files to the same email.
                         </div>
+
                     </div>
 
                     <label for="mailAttachmentInput"
@@ -1300,29 +1276,46 @@
 
             </div>
 
-            <!-- Compose actions -->
             <div class="mail-compose-footer">
 
                 <div class="mail-footer-left">
 
-                    <button type="submit"
-                            class="mail-send-button">
-                        📨 Send
-                    </button>
+                    @if (Model.DraftId.HasValue)
+                    {
+                        <button type="submit"
+                                formaction="@Url.Action("SendDraft", "Mail", new { id = Model.DraftId.Value })"
+                                class="mail-send-button">
+                            Send
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="submit"
+                                class="mail-send-button">
+                            Send
+                        </button>
+                    }
 
                     <button type="submit"
                             formaction="@Url.Action("SaveDraft", "Mail")"
                             class="mail-draft-button">
-                        💾 Save Draft
+                        Save Draft
                     </button>
+
+                    <a asp-controller="Mail"
+                       asp-action="Inbox"
+                       class="mail-cancel-button">
+                        Cancel
+                    </a>
 
                 </div>
 
-                <a asp-controller="Mail"
-                   asp-action="Inbox"
-                   class="mail-cancel-button">
-                    Cancel
-                </a>
+                <button type="button"
+                        class="mail-delete-button"
+                        title="Discard draft"
+                        onclick="window.location.href='@Url.Action("Inbox", "Mail")'">
+                    🗑
+                </button>
 
             </div>
 

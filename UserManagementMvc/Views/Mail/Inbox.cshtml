@@ -158,7 +158,11 @@
                         </div>
 
                         <div class="mail-row-date">
-                            @mail.SentAt.ToString("dd MMM yyyy")
+                            @(
+                                mail.SentAt.Date == DateTime.Today
+                                    ? mail.SentAt.ToString("h:mm tt")
+                                    : mail.SentAt.ToString("dd MMM")
+                            )
                         </div>
 
                     </a>

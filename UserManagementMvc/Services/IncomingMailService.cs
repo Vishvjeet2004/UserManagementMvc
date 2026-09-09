@@ -3,6 +3,7 @@ using MailKit.Net.Imap;
 using MailKit.Search;
 using MailKit.Security;
 using MimeKit;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using UserManagementMvc.Models;
 
@@ -13,15 +14,18 @@ public class IncomingMailService : BackgroundService
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IConfiguration _configuration;
     private readonly ILogger<IncomingMailService> _logger;
+    private readonly IWebHostEnvironment _environment;
 
     public IncomingMailService(
         IServiceScopeFactory scopeFactory,
         IConfiguration configuration,
-        ILogger<IncomingMailService> logger)
+        ILogger<IncomingMailService> logger,
+        IWebHostEnvironment environment)
     {
         _scopeFactory = scopeFactory;
         _configuration = configuration;
         _logger = logger;
+        _environment = environment;
     }
 
     protected override async Task ExecuteAsync(
@@ -192,7 +196,8 @@ public class IncomingMailService : BackgroundService
             return;
         }
 
-        senderEmail = senderEmail.Trim().ToLower();
+        senderEmail =
+            senderEmail.Trim().ToLowerInvariant();
 
         string subject =
             string.IsNullOrWhiteSpace(message.Subject)
@@ -211,7 +216,7 @@ public class IncomingMailService : BackgroundService
                 .Where(
                     x => !string.IsNullOrWhiteSpace(x))
                 .Select(
-                    x => x.Trim().ToLower())
+                    x => x.Trim().ToLowerInvariant())
                 .Distinct()
                 .ToList();
 
@@ -258,26 +263,32 @@ public class IncomingMailService : BackgroundService
                         x.IsDeleted != true &&
                         x.IsActive == true &&
                         x.Email != null)
-                .ToListAsync(cancellationToken);
+                .ToListAsync(
+                    cancellationToken);
 
-        // Match Gmail recipients with application users in memory.
+        // Match incoming Gmail recipients with application users in memory.
         var users =
             activeUsers
                 .Where(
                     x =>
                         !string.IsNullOrWhiteSpace(x.Email) &&
                         recipientEmails.Contains(
-                            x.Email.Trim().ToLower()))
+                            x.Email.Trim().ToLowerInvariant()))
                 .ToList();
 
         if (users.Count == 0)
         {
             _logger.LogWarning(
                 "No active application user found for incoming email. Recipients: {Recipients}",
-                string.Join(", ", recipientEmails));
+                string.Join(
+                    ", ",
+                    recipientEmails));
 
             return;
         }
+
+        var mails =
+            new List<MailMessage>();
 
         foreach (var user in users)
         {
@@ -287,6 +298,8 @@ public class IncomingMailService : BackgroundService
                 SenderEmail = senderEmail,
                 RecipientUserId = user.Id,
                 RecipientEmail = user.Email,
+                CcEmails = null,
+                BccEmails = null,
                 Subject = subject,
                 Body = body,
                 IsRead = false,
@@ -304,8 +317,20 @@ public class IncomingMailService : BackgroundService
                 ExternalMessageId = externalMessageId
             };
 
+            mails.Add(mail);
+
             context.MailMessages.Add(mail);
         }
+
+        await context.SaveChangesAsync(
+            cancellationToken);
+
+        // Save normal attachments as well as Gmail inline/embedded images.
+        await SaveIncomingAttachmentsAsync(
+            message,
+            mails,
+            context,
+            cancellationToken);
 
         await context.SaveChangesAsync(
             cancellationToken);
@@ -319,19 +344,504 @@ public class IncomingMailService : BackgroundService
             subject);
     }
 
+    private async Task SaveIncomingAttachmentsAsync(
+        MimeMessage message,
+        IReadOnlyCollection<MailMessage> mails,
+        AppDbContext context,
+        CancellationToken cancellationToken)
+    {
+        var attachmentParts =
+            GetAttachmentParts(message);
+
+        if (attachmentParts.Count == 0)
+        {
+            _logger.LogInformation(
+                "Incoming email has no supported file attachments or inline images. Subject: {Subject}",
+                message.Subject);
+
+            return;
+        }
+
+        var attachmentSettings =
+            _configuration
+                .GetSection("MailAttachmentSettings");
+
+        int maxFiles =
+            attachmentSettings
+                .GetValue<int?>("MaxFilesPerMail")
+            ?? 10;
+
+        long maxFileSize =
+            (
+                attachmentSettings
+                    .GetValue<long?>("MaxFileSizeMb")
+                ?? 25
+            ) *
+            1024L *
+            1024L;
+
+        var allowedExtensions =
+            attachmentSettings
+                .GetSection("AllowedExtensions")
+                .Get<string[]>()
+            ?? Array.Empty<string>();
+
+        var storageDirectory =
+            Path.Combine(
+                _environment.ContentRootPath,
+                "App_Data",
+                "MailAttachments");
+
+        Directory.CreateDirectory(
+            storageDirectory);
+
+        int savedAttachmentCount = 0;
+
+        foreach (var attachment in attachmentParts)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                break;
+            }
+
+            if (savedAttachmentCount >= maxFiles)
+            {
+                _logger.LogWarning(
+                    "Maximum attachment count reached for incoming email. Subject: {Subject}",
+                    message.Subject);
+
+                break;
+            }
+
+            string originalFileName =
+                GetSafeFileName(
+                    attachment.FileName);
+
+            // Gmail inline images can sometimes arrive without a normal filename.
+            if (string.IsNullOrWhiteSpace(originalFileName))
+            {
+                originalFileName =
+                    CreateInlineImageFileName(
+                        attachment);
+            }
+
+            if (string.IsNullOrWhiteSpace(originalFileName))
+            {
+                originalFileName =
+                    "attachment";
+            }
+
+            string extension =
+                Path.GetExtension(
+                    originalFileName)
+                .ToLowerInvariant();
+
+            // If the inline image has no extension, derive it from its MIME content type.
+            if (string.IsNullOrWhiteSpace(extension))
+            {
+                extension =
+                    GetExtensionFromContentType(
+                        attachment.ContentType?.MimeType);
+
+                if (!string.IsNullOrWhiteSpace(extension))
+                {
+                    originalFileName += extension;
+                }
+            }
+
+            if (allowedExtensions.Length > 0 &&
+                !IsExtensionAllowed(
+                    extension,
+                    allowedExtensions))
+            {
+                _logger.LogWarning(
+                    "Incoming attachment skipped because extension is not allowed. File: {FileName}, ContentType: {ContentType}",
+                    originalFileName,
+                    attachment.ContentType?.MimeType);
+
+                continue;
+            }
+
+            string storedFileName =
+                $"{Guid.NewGuid():N}{extension}";
+
+            string physicalPath =
+                Path.Combine(
+                    storageDirectory,
+                    storedFileName);
+
+            long fileSize;
+
+            try
+            {
+                await using var fileStream =
+                    new FileStream(
+                        physicalPath,
+                        FileMode.CreateNew,
+                        FileAccess.Write,
+                        FileShare.None,
+                        81920,
+                        FileOptions.Asynchronous);
+
+                await attachment.Content.DecodeToAsync(
+                    fileStream,
+                    cancellationToken);
+
+                fileSize =
+                    fileStream.Length;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Failed to save incoming attachment {FileName}.",
+                    originalFileName);
+
+                TryDeleteFile(
+                    physicalPath);
+
+                continue;
+            }
+
+            if (fileSize <= 0)
+            {
+                _logger.LogWarning(
+                    "Incoming attachment skipped because the file is empty. File: {FileName}",
+                    originalFileName);
+
+                TryDeleteFile(
+                    physicalPath);
+
+                continue;
+            }
+
+            if (fileSize > maxFileSize)
+            {
+                _logger.LogWarning(
+                    "Incoming attachment skipped because file size exceeds the configured limit. File: {FileName}, Size: {FileSize}",
+                    originalFileName,
+                    fileSize);
+
+                TryDeleteFile(
+                    physicalPath);
+
+                continue;
+            }
+
+            bool isInline =
+                IsInlineAttachment(
+                    attachment);
+
+            foreach (var mail in mails)
+            {
+                var mailAttachment =
+                    new MailAttachment
+                    {
+                        MailMessageId =
+                            mail.Id,
+
+                        OriginalFileName =
+                            originalFileName,
+
+                        StoredFileName =
+                            storedFileName,
+
+                        ContentType =
+                            attachment
+                                .ContentType
+                                ?.MimeType
+                            ?? "application/octet-stream",
+
+                        FileSize =
+                            fileSize,
+
+                        StoragePath =
+                            physicalPath,
+
+                        IsInline =
+                            isInline,
+
+                        ContentId =
+                            CleanContentId(
+                                attachment.ContentId),
+
+                        CreatedAt =
+                            DateTime.Now
+                    };
+
+                context.MailAttachments.Add(
+                    mailAttachment);
+            }
+
+            savedAttachmentCount++;
+
+            _logger.LogInformation(
+                "Incoming attachment saved successfully. File: {FileName}, ContentType: {ContentType}, Size: {FileSize}, Inline: {IsInline}, ContentId: {ContentId}, Recipients: {RecipientCount}",
+                originalFileName,
+                attachment.ContentType?.MimeType,
+                fileSize,
+                isInline,
+                attachment.ContentId,
+                mails.Count);
+        }
+
+        _logger.LogInformation(
+            "Incoming email attachment processing completed. Saved {SavedCount} of {DetectedCount} detected parts.",
+            savedAttachmentCount,
+            attachmentParts.Count);
+    }
+
+    private static List<MimePart> GetAttachmentParts(
+        MimeMessage message)
+    {
+        var parts =
+            new List<MimePart>();
+
+        var visited =
+            new HashSet<MimePart>();
+
+        CollectMimeParts(
+            message.Body,
+            parts,
+            visited);
+
+        return parts;
+    }
+
+    private static void CollectMimeParts(
+        MimeEntity? entity,
+        List<MimePart> parts,
+        HashSet<MimePart> visited)
+    {
+        if (entity == null)
+        {
+            return;
+        }
+
+        if (entity is MimePart mimePart)
+        {
+            if (visited.Add(mimePart) &&
+                IsFileOrImagePart(mimePart))
+            {
+                parts.Add(mimePart);
+            }
+
+            return;
+        }
+
+        if (entity is Multipart multipart)
+        {
+            foreach (var child in multipart)
+            {
+                CollectMimeParts(
+                    child,
+                    parts,
+                    visited);
+            }
+        }
+    }
+
+    private static bool IsFileOrImagePart(
+        MimePart part)
+    {
+        bool hasFileName =
+            !string.IsNullOrWhiteSpace(
+                part.FileName);
+
+        bool hasContentId =
+            !string.IsNullOrWhiteSpace(
+                part.ContentId);
+
+        string mediaType =
+            part.ContentType?.MediaType
+            ?? "";
+
+        bool isImage =
+            mediaType.StartsWith(
+                "image/",
+                StringComparison.OrdinalIgnoreCase);
+
+        string disposition =
+            part.ContentDisposition?.Disposition
+            ?? "";
+
+        bool isAttachment =
+            string.Equals(
+                disposition,
+                "attachment",
+                StringComparison.OrdinalIgnoreCase);
+
+        bool isInline =
+            string.Equals(
+                disposition,
+                "inline",
+                StringComparison.OrdinalIgnoreCase);
+
+        // Normal files, explicit attachments, inline images and CID images are supported.
+        return hasFileName ||
+               hasContentId ||
+               isImage ||
+               isAttachment ||
+               isInline;
+    }
+
+    private static bool IsInlineAttachment(
+        MimePart attachment)
+    {
+        string disposition =
+            attachment.ContentDisposition?.Disposition
+            ?? "";
+
+        bool inlineDisposition =
+            string.Equals(
+                disposition,
+                "inline",
+                StringComparison.OrdinalIgnoreCase);
+
+        bool hasContentId =
+            !string.IsNullOrWhiteSpace(
+                attachment.ContentId);
+
+        bool isImage =
+            attachment.ContentType?.MediaType
+                ?.StartsWith(
+                    "image/",
+                    StringComparison.OrdinalIgnoreCase)
+            ?? false;
+
+        return inlineDisposition ||
+               hasContentId ||
+               isImage;
+    }
+
+    private static string CreateInlineImageFileName(
+        MimePart attachment)
+    {
+        string extension =
+            GetExtensionFromContentType(
+                attachment.ContentType?.MimeType);
+
+        if (string.IsNullOrWhiteSpace(extension))
+        {
+            extension = ".bin";
+        }
+
+        return $"inline-image{extension}";
+    }
+
+    private static string GetExtensionFromContentType(
+        string? contentType)
+    {
+        if (string.IsNullOrWhiteSpace(contentType))
+        {
+            return "";
+        }
+
+        return contentType.Trim().ToLowerInvariant() switch
+        {
+            "image/jpeg" => ".jpg",
+            "image/jpg" => ".jpg",
+            "image/png" => ".png",
+            "image/gif" => ".gif",
+            "image/webp" => ".webp",
+            "image/bmp" => ".bmp",
+            "image/svg+xml" => ".svg",
+            "application/pdf" => ".pdf",
+            "text/plain" => ".txt",
+            "application/zip" => ".zip",
+            "application/msword" => ".doc",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document" => ".docx",
+            "application/vnd.ms-excel" => ".xls",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" => ".xlsx",
+            "application/vnd.ms-powerpoint" => ".ppt",
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation" => ".pptx",
+            _ => ""
+        };
+    }
+
+    private static bool IsExtensionAllowed(
+        string extension,
+        IEnumerable<string> allowedExtensions)
+    {
+        if (string.IsNullOrWhiteSpace(extension))
+        {
+            return false;
+        }
+
+        return allowedExtensions.Any(
+            allowed =>
+                string.Equals(
+                    allowed?.Trim(),
+                    extension,
+                    StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string CleanContentId(
+        string? contentId)
+    {
+        if (string.IsNullOrWhiteSpace(contentId))
+        {
+            return "";
+        }
+
+        return contentId
+            .Trim()
+            .Trim('<', '>');
+    }
+
+    private static string GetSafeFileName(
+        string? fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            return "";
+        }
+
+        string cleanedFileName =
+            Path.GetFileName(
+                fileName.Trim());
+
+        foreach (char invalidCharacter in
+                 Path.GetInvalidFileNameChars())
+        {
+            cleanedFileName =
+                cleanedFileName.Replace(
+                    invalidCharacter,
+                    '_');
+        }
+
+        return cleanedFileName;
+    }
+
+    private static void TryDeleteFile(
+        string filePath)
+    {
+        try
+        {
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+            }
+        }
+        catch
+        {
+            // Ignore cleanup errors because the original processing error is already logged.
+        }
+    }
+
     private static string GetMessageBody(
         MimeMessage message)
     {
         if (!string.IsNullOrWhiteSpace(
-                message.TextBody))
-        {
-            return message.TextBody;
-        }
-
-        if (!string.IsNullOrWhiteSpace(
                 message.HtmlBody))
         {
             return message.HtmlBody;
+        }
+
+        if (!string.IsNullOrWhiteSpace(
+                message.TextBody))
+        {
+            return message.TextBody;
         }
 
         return "";

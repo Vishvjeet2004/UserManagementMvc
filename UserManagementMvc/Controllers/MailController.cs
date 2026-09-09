@@ -1,4 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using UserManagementMvc.Models;
 using UserManagementMvc.Services;
 using UserManagementMvc.ViewModels;
 
@@ -6,13 +8,16 @@ namespace UserManagementMvc.Controllers;
 
 public class MailController : Controller
 {
+    private readonly AppDbContext _context;
     private readonly IMailService _mailService;
     private readonly IAuditLogService _auditLogService;
 
     public MailController(
+        AppDbContext context,
         IMailService mailService,
         IAuditLogService auditLogService)
     {
+        _context = context;
         _mailService = mailService;
         _auditLogService = auditLogService;
     }
@@ -45,8 +50,9 @@ public class MailController : Controller
             return LoginRedirect();
         }
 
-        var inbox = await _mailService
-            .GetInboxAsync(userId.Value);
+        var inbox =
+            await _mailService
+                .GetInboxAsync(userId.Value);
 
         return View(inbox);
     }
@@ -61,8 +67,9 @@ public class MailController : Controller
             return LoginRedirect();
         }
 
-        var sent = await _mailService
-            .GetSentAsync(userId.Value);
+        var sent =
+            await _mailService
+                .GetSentAsync(userId.Value);
 
         return View(sent);
     }
@@ -77,8 +84,9 @@ public class MailController : Controller
             return LoginRedirect();
         }
 
-        var starred = await _mailService
-            .GetStarredAsync(userId.Value);
+        var starred =
+            await _mailService
+                .GetStarredAsync(userId.Value);
 
         return View(starred);
     }
@@ -93,8 +101,9 @@ public class MailController : Controller
             return LoginRedirect();
         }
 
-        var drafts = await _mailService
-            .GetDraftsAsync(userId.Value);
+        var drafts =
+            await _mailService
+                .GetDraftsAsync(userId.Value);
 
         return View(drafts);
     }
@@ -109,14 +118,15 @@ public class MailController : Controller
             return LoginRedirect();
         }
 
-        var trash = await _mailService
-            .GetTrashAsync(userId.Value);
+        var trash =
+            await _mailService
+                .GetTrashAsync(userId.Value);
 
         return View(trash);
     }
 
     [HttpGet]
-    public IActionResult Compose(
+    public async Task<IActionResult> Compose(
         string? to = null,
         int? replyTo = null,
         int? draftId = null)
@@ -138,11 +148,18 @@ public class MailController : Controller
                 });
         }
 
-        var model = new MailComposeViewModel
-        {
-            RecipientEmail = to ?? "",
-            ReplyToMessageId = replyTo
-        };
+        var model =
+            new MailComposeViewModel
+            {
+                RecipientEmail =
+                    to ?? "",
+                ReplyToMessageId =
+                    replyTo
+            };
+
+        await LoadComposeDataAsync(
+            model,
+            userId.Value);
 
         return View(model);
     }
@@ -161,21 +178,33 @@ public class MailController : Controller
 
         if (!ModelState.IsValid)
         {
+            await LoadComposeDataAsync(
+                model,
+                userId.Value);
+
             return View(model);
         }
 
-        bool result = await _mailService.SendMailAsync(
-            userId.Value,
-            model.RecipientEmail,
-            model.Subject,
-            model.Body,
-            model.ReplyToMessageId);
+        bool result =
+            await _mailService.SendMailAsync(
+                userId.Value,
+                model.RecipientEmail,
+                model.CcEmails,
+                model.BccEmails,
+                model.Subject,
+                model.Body,
+                model.ReplyToMessageId,
+                model.Attachments);
 
         if (!result)
         {
             ModelState.AddModelError(
                 "",
-                "Mail could not be sent.");
+                "Mail could not be sent. Please check recipient, attachments and SMTP settings.");
+
+            await LoadComposeDataAsync(
+                model,
+                userId.Value);
 
             return View(model);
         }
@@ -188,7 +217,8 @@ public class MailController : Controller
         TempData["Success"] =
             "Mail sent successfully.";
 
-        return RedirectToAction(nameof(Sent));
+        return RedirectToAction(
+            nameof(Sent));
     }
 
     [HttpPost]
@@ -203,12 +233,16 @@ public class MailController : Controller
             return LoginRedirect();
         }
 
-        var draftId = await _mailService.SaveDraftAsync(
-            userId.Value,
-            model.RecipientEmail,
-            model.Subject,
-            model.Body,
-            model.DraftId);
+        int? draftId =
+            await _mailService.SaveDraftAsync(
+                userId.Value,
+                model.RecipientEmail,
+                model.CcEmails,
+                model.BccEmails,
+                model.Subject,
+                model.Body,
+                model.DraftId,
+                model.Attachments);
 
         if (draftId == null)
         {
@@ -216,13 +250,20 @@ public class MailController : Controller
                 "",
                 "Draft could not be saved.");
 
-            return View("Compose", model);
+            await LoadComposeDataAsync(
+                model,
+                userId.Value);
+
+            return View(
+                "Compose",
+                model);
         }
 
         TempData["Success"] =
             "Draft saved successfully.";
 
-        return RedirectToAction(nameof(Drafts));
+        return RedirectToAction(
+            nameof(Drafts));
     }
 
     [HttpGet]
@@ -236,23 +277,50 @@ public class MailController : Controller
             return LoginRedirect();
         }
 
-        var draft = await _mailService
-            .GetDraftAsync(id, userId.Value);
+        var draft =
+            await _mailService
+                .GetDraftAsync(
+                    id,
+                    userId.Value);
 
         if (draft == null)
         {
             return NotFound();
         }
 
-        var model = new MailComposeViewModel
-        {
-            DraftId = draft.Id,
-            RecipientEmail = draft.RecipientEmail,
-            Subject = draft.Subject,
-            Body = draft.Body
-        };
+        var model =
+            new MailComposeViewModel
+            {
+                DraftId =
+                    draft.Id,
 
-        return View("Compose", model);
+                RecipientEmail =
+                    draft.RecipientEmail,
+
+                CcEmails =
+                    draft.CcEmails,
+
+                BccEmails =
+                    draft.BccEmails,
+
+                Subject =
+                    draft.Subject,
+
+                Body =
+                    draft.Body,
+
+                ExistingAttachments =
+                    draft.Attachments
+                        .ToList()
+            };
+
+        await LoadComposeDataAsync(
+            model,
+            userId.Value);
+
+        return View(
+            "Compose",
+            model);
     }
 
     [HttpPost]
@@ -267,19 +335,23 @@ public class MailController : Controller
             return LoginRedirect();
         }
 
-        bool result = await _mailService.SendDraftAsync(
-            id,
-            userId.Value);
+        bool result =
+            await _mailService
+                .SendDraftAsync(
+                    id,
+                    userId.Value);
 
         if (!result)
         {
             TempData["Error"] =
-                "Draft could not be sent. Please check recipient, subject and message.";
+                "Draft could not be sent. Please check recipient, subject, message and SMTP settings.";
 
-            return RedirectToAction(nameof(EditDraft), new
-            {
-                id
-            });
+            return RedirectToAction(
+                nameof(EditDraft),
+                new
+                {
+                    id
+                });
         }
 
         await _auditLogService.LogAsync(
@@ -290,7 +362,8 @@ public class MailController : Controller
         TempData["Success"] =
             "Draft sent successfully.";
 
-        return RedirectToAction(nameof(Sent));
+        return RedirectToAction(
+            nameof(Sent));
     }
 
     [HttpGet]
@@ -304,17 +377,19 @@ public class MailController : Controller
             return LoginRedirect();
         }
 
-        var mail = await _mailService
-            .GetMessageAsync(
-                id,
-                userId.Value);
+        var mail =
+            await _mailService
+                .GetMessageAsync(
+                    id,
+                    userId.Value);
 
         if (mail == null)
         {
             return NotFound();
         }
 
-        if (mail.RecipientUserId == userId.Value)
+        if (mail.RecipientUserId.HasValue &&
+            mail.RecipientUserId.Value == userId.Value)
         {
             await _mailService.MarkAsReadAsync(
                 id,
@@ -322,6 +397,65 @@ public class MailController : Controller
         }
 
         return View(mail);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> DownloadAttachment(
+        int id)
+    {
+        int? userId = CurrentUserId();
+
+        if (userId == null)
+        {
+            return LoginRedirect();
+        }
+
+        var attachment =
+            await _context
+                .Set<MailAttachment>()
+                .Include(x => x.MailMessage)
+                .FirstOrDefaultAsync(x =>
+                    x.Id == id &&
+                    (
+                        x.MailMessage.SenderUserId ==
+                            userId.Value
+                        ||
+                        x.MailMessage.RecipientUserId ==
+                            userId.Value
+                    ));
+
+        if (attachment == null)
+        {
+            return NotFound();
+        }
+
+        string relativePath =
+            attachment.StoragePath
+                .Replace(
+                    '/',
+                    Path.DirectorySeparatorChar);
+
+        string physicalPath =
+            Path.Combine(
+                Directory.GetCurrentDirectory(),
+                relativePath);
+
+        if (!System.IO.File.Exists(
+                physicalPath))
+        {
+            return NotFound();
+        }
+
+        string contentType =
+            string.IsNullOrWhiteSpace(
+                attachment.ContentType)
+                ? "application/octet-stream"
+                : attachment.ContentType;
+
+        return PhysicalFile(
+            physicalPath,
+            contentType,
+            attachment.OriginalFileName);
     }
 
     [HttpPost]
@@ -384,7 +518,8 @@ public class MailController : Controller
             id,
             userId.Value);
 
-        return RedirectToAction(nameof(Inbox));
+        return RedirectToAction(
+            nameof(Inbox));
     }
 
     [HttpGet]
@@ -402,7 +537,8 @@ public class MailController : Controller
             id,
             userId.Value);
 
-        return RedirectToAction(nameof(Sent));
+        return RedirectToAction(
+            nameof(Sent));
     }
 
     [HttpGet]
@@ -420,7 +556,8 @@ public class MailController : Controller
             id,
             userId.Value);
 
-        return RedirectToAction(nameof(Drafts));
+        return RedirectToAction(
+            nameof(Drafts));
     }
 
     [HttpGet]
@@ -438,7 +575,8 @@ public class MailController : Controller
             id,
             userId.Value);
 
-        return RedirectToAction(nameof(Trash));
+        return RedirectToAction(
+            nameof(Trash));
     }
 
     [HttpGet]
@@ -456,6 +594,49 @@ public class MailController : Controller
             id,
             userId.Value);
 
-        return RedirectToAction(nameof(Trash));
+        return RedirectToAction(
+            nameof(Trash));
+    }
+
+    private async Task LoadComposeDataAsync(
+        MailComposeViewModel model,
+        int userId)
+    {
+        model.Recipients =
+            await _context
+                .Users
+                .AsNoTracking()
+                .Where(x =>
+                    x.Id != userId &&
+                    x.IsDeleted != true &&
+                    x.IsActive == true &&
+                    !string.IsNullOrWhiteSpace(
+                        x.Email))
+                .OrderBy(x => x.Name)
+                .ToListAsync();
+
+        model.Tools =
+            await _context
+                .Set<MailComposerTool>()
+                .AsNoTracking()
+                .Where(x =>
+                    x.IsEnabled)
+                .OrderBy(x =>
+                    x.DisplayOrder)
+                .ThenBy(x =>
+                    x.Id)
+                .ToListAsync();
+
+        model.Signatures =
+            await _context
+                .Set<MailSignature>()
+                .AsNoTracking()
+                .Where(x =>
+                    x.IsActive)
+                .OrderByDescending(x =>
+                    x.IsDefault)
+                .ThenBy(x =>
+                    x.Name)
+                .ToListAsync();
     }
 }

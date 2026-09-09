@@ -181,9 +181,12 @@ namespace UserManagementMvc.Controllers
                 </div>";
 
             await _emailService.SendEmailAsync(
-                user.Email,
-                subject,
-                body);
+    user.Email,
+    null,
+    null,
+    subject,
+    body,
+    null);
         }
 
 
@@ -314,9 +317,12 @@ namespace UserManagementMvc.Controllers
             </div>";
 
                 await _emailService.SendEmailAsync(
-                    pending.Email,
-                    "Registration Email Verification",
-                    body);
+    pending.Email,
+    null,
+    null,
+    "Registration Email Verification",
+    body,
+    null);
 
                 TempData["Success"] =
                     "A 6-digit verification OTP has been sent to your email address.";
@@ -1175,9 +1181,12 @@ namespace UserManagementMvc.Controllers
             </div>";
 
                 await _emailService.SendEmailAsync(
-                    pending.Email,
-                    "New Registration Verification OTP",
-                    body);
+     pending.Email,
+     null,
+     null,
+     "New Registration Verification OTP",
+     body,
+     null);
 
                 TempData["Success"] =
                     "A new OTP has been sent to your email address.";

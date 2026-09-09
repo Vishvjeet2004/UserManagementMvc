@@ -40,6 +40,12 @@ public partial class AppDbContext : DbContext
 
     public DbSet<ChatEmoji> ChatEmojis { get; set; }
 
+    public DbSet<MailAttachment> MailAttachments { get; set; }
+
+    public DbSet<MailComposerTool> MailComposerTools { get; set; }
+
+    public DbSet<MailSignature> MailSignatures { get; set; }
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -309,6 +315,12 @@ public partial class AppDbContext : DbContext
                 .HasMaxLength(150)
                 .IsRequired();
 
+            entity.Property(e => e.CcEmails)
+    .HasMaxLength(2000);
+
+            entity.Property(e => e.BccEmails)
+                .HasMaxLength(2000);
+
             entity.Property(e => e.Subject)
                 .HasMaxLength(255)
                 .IsRequired();
@@ -373,7 +385,123 @@ public partial class AppDbContext : DbContext
                 .HasConstraintName("FK_MailMessages_ParentMessage");
         });
 
+        // Mail Attachments Table
+        modelBuilder.Entity<MailAttachment>(entity =>
+        {
+            entity.HasKey(e => e.Id)
+                .HasName("PRIMARY");
 
+            entity.ToTable("mailattachments");
+
+            entity.HasIndex(e => e.MailMessageId)
+                .HasDatabaseName(
+                    "IX_MailAttachments_MailMessageId");
+
+            entity.Property(e => e.OriginalFileName)
+                .HasMaxLength(255)
+                .IsRequired();
+
+            entity.Property(e => e.StoredFileName)
+                .HasMaxLength(255)
+                .IsRequired();
+
+            entity.Property(e => e.ContentType)
+                .HasMaxLength(150);
+
+            entity.Property(e => e.FileSize)
+                .IsRequired();
+
+            entity.Property(e => e.StoragePath)
+                .HasMaxLength(1000)
+                .IsRequired();
+
+            entity.Property(e => e.IsInline)
+                .HasDefaultValue(false);
+
+            entity.Property(e => e.ContentId)
+                .HasMaxLength(255);
+
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("datetime")
+                .HasDefaultValueSql(
+                    "CURRENT_TIMESTAMP");
+
+            entity.HasOne(e => e.MailMessage)
+                .WithMany(e => e.Attachments)
+                .HasForeignKey(e => e.MailMessageId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName(
+                    "FK_MailAttachments_MailMessages");
+        });
+
+        // Mail Composer Tools Table
+        modelBuilder.Entity<MailComposerTool>(entity =>
+        {
+            entity.HasKey(e => e.Id)
+                .HasName("PRIMARY");
+
+            entity.ToTable("mailcomposertools");
+
+            entity.HasIndex(e => e.ToolKey)
+                .IsUnique()
+                .HasDatabaseName(
+                    "UX_MailComposerTools_ToolKey");
+
+            entity.Property(e => e.ToolKey)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(e => e.DisplayName)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(e => e.IsEnabled)
+                .HasDefaultValue(true);
+
+            entity.Property(e => e.DisplayOrder)
+                .HasDefaultValue(0);
+
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("datetime")
+                .HasDefaultValueSql(
+                    "CURRENT_TIMESTAMP");
+
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("datetime");
+        });
+
+        // Mail Signatures Table
+        modelBuilder.Entity<MailSignature>(entity =>
+        {
+            entity.HasKey(e => e.Id)
+                .HasName("PRIMARY");
+
+            entity.ToTable("mailsignatures");
+
+            entity.Property(e => e.Name)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(e => e.SignatureHtml)
+                .HasColumnType("longtext")
+                .IsRequired();
+
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true);
+
+            entity.Property(e => e.IsDefault)
+                .HasDefaultValue(false);
+
+            entity.Property(e => e.CreatedBy);
+
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("datetime")
+                .HasDefaultValueSql(
+                    "CURRENT_TIMESTAMP");
+
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("datetime");
+        });
 
         // Chat Messages Table
 

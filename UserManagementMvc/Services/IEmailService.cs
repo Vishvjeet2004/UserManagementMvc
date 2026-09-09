@@ -1,12 +1,12 @@
-﻿using System.Threading.Tasks;
+﻿namespace UserManagementMvc.Services;
 
-namespace UserManagementMvc.Services
+public interface IEmailService
 {
-    public interface IEmailService
-    {
-        Task SendEmailAsync(
-            string toEmail,
-            string subject,
-            string htmlBody);
-    }
+    Task SendEmailAsync(
+        string toEmail,
+        string? ccEmails,
+        string? bccEmails,
+        string subject,
+        string htmlBody,
+        IReadOnlyCollection<EmailAttachment>? attachments = null);
 }

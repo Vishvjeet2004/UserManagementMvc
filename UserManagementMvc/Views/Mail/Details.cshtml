@@ -1,41 +1,83 @@
 ﻿@model UserManagementMvc.Models.MailMessage
 
+@using UserManagementMvc.Services
+
+@inject MailHtmlSanitizer HtmlSanitizer
+
 @{
-    ViewData["Title"] = "Mail Details";
+    ViewData["Title"] = string.IsNullOrWhiteSpace(Model.Subject)
+        ? "Mail"
+        : Model.Subject;
+
+    string safeBody =
+        HtmlSanitizer.Sanitize(
+            Model.Body ?? string.Empty);
 }
 
-<div class="mail-details-page">
+<div class="mail-page">
+
+    <div class="mail-page-header">
+
+        <div>
+            <h2>Mail</h2>
+            <p>Message details and attachments.</p>
+        </div>
+
+        <a asp-controller="Mail"
+           asp-action="Inbox"
+           class="mail-primary-button">
+            ← Back to Inbox
+        </a>
+
+    </div>
 
     <div class="mail-details-card">
 
         <div class="mail-details-header">
 
-            <div>
-                <h2>@Model.Subject</h2>
+            <div class="mail-details-subject">
 
-                <span class="mail-type-badge">
-                    @Model.MessageType
-                </span>
+                <h3>
+                    @(string.IsNullOrWhiteSpace(Model.Subject)
+                        ? "(No subject)"
+                        : Model.Subject)
+                </h3>
+
+                @if (string.Equals(
+                    Model.MessageType,
+                    "External",
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    <span class="mail-type-badge">
+                        External
+                    </span>
+                }
+
             </div>
 
-            <form asp-controller="Mail"
-                  asp-action="ToggleStar"
-                  method="post">
+            <div class="mail-details-star">
 
-                @Html.AntiForgeryToken()
+                <form asp-controller="Mail"
+                      asp-action="ToggleStar"
+                      method="post">
 
-                <input type="hidden"
-                       name="id"
-                       value="@Model.Id" />
+                    @Html.AntiForgeryToken()
 
-                <button type="submit"
-                        class="mail-details-star @(Model.IsStarred ? "active" : "")">
+                    <input type="hidden"
+                           name="id"
+                           value="@Model.Id" />
 
-                    @(Model.IsStarred ? "★" : "☆")
+                    <button type="submit"
+                            class="mail-star-button @(Model.IsStarred ? "active" : "")"
+                            title="@(Model.IsStarred ? "Remove star" : "Star")">
 
-                </button>
+                        @(Model.IsStarred ? "★" : "☆")
 
-            </form>
+                    </button>
+
+                </form>
+
+            </div>
 
         </div>
 
@@ -51,34 +93,105 @@
                 @Model.RecipientEmail
             </div>
 
+            @if (!string.IsNullOrWhiteSpace(Model.CcEmails))
+            {
+                <div>
+                    <strong>Cc:</strong>
+                    @Model.CcEmails
+                </div>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(Model.BccEmails))
+            {
+                <div>
+                    <strong>Bcc:</strong>
+                    @Model.BccEmails
+                </div>
+            }
+
             <div>
                 <strong>Date:</strong>
-                @Model.SentAt.ToString("dd MMM yyyy, HH:mm")
+                @Model.SentAt.ToString(
+                    "dd MMM yyyy, hh:mm tt")
             </div>
 
         </div>
 
+        <div class="mail-details-divider"></div>
+
         <div class="mail-details-body">
-            @Model.Body
-        </div>
 
-        <div class="mail-details-footer">
-
-            <a asp-controller="Mail"
-               asp-action="Compose"
-               asp-route-to="@Model.SenderEmail"
-               asp-route-replyTo="@Model.Id"
-               class="mail-primary-button">
-                Reply
-            </a>
-
-            <a asp-controller="Mail"
-               asp-action="Inbox"
-               class="mail-secondary-button">
-                Back
-            </a>
+            @Html.Raw(safeBody)
 
         </div>
+
+        @if (Model.Attachments != null &&
+             Model.Attachments.Count > 0)
+        {
+            <div class="mail-details-divider"></div>
+
+            <div class="mail-details-attachments">
+
+                <div class="mail-details-attachments-title">
+                    Attachments (@Model.Attachments.Count)
+                </div>
+
+                <div class="mail-attachment-list">
+
+                    @foreach (var attachment in Model.Attachments)
+                    {
+                        <a asp-controller="Mail"
+                           asp-action="DownloadAttachment"
+                           asp-route-id="@attachment.Id"
+                           class="mail-attachment-item">
+
+                            <span class="mail-attachment-icon">
+                                📎
+                            </span>
+
+                            <span class="mail-attachment-info">
+
+                                <span class="mail-attachment-name">
+                                    @attachment.OriginalFileName
+                                </span>
+
+                                <span class="mail-attachment-size">
+
+                                    @{
+                                        double sizeMb =
+                                            attachment.FileSize /
+                                            1024d /
+                                            1024d;
+                                    }
+
+                                    @if (sizeMb >= 1)
+                                    {
+                                        @($"{sizeMb:0.##} MB")
+                                    }
+                                    else
+                                    {
+                                        double sizeKb =
+                                            attachment.FileSize /
+                                            1024d;
+
+                                        @($"{sizeKb:0.##} KB")
+                                    }
+
+                                </span>
+
+                            </span>
+
+                            <span class="mail-attachment-download">
+                                Download
+                            </span>
+
+                        </a>
+                    }
+
+                </div>
+
+            </div>
+        }
 
     </div>
 

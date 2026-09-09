@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Ganss.Xss;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using UserManagementMvc.Models;
 
 namespace UserManagementMvc.Services;
@@ -7,40 +9,49 @@ public class MailService : IMailService
 {
     private readonly AppDbContext _context;
     private readonly IEmailService _emailService;
+    private readonly MailHtmlSanitizer _htmlSanitizer;
+    private readonly IWebHostEnvironment _environment;
+    private readonly IConfiguration _configuration;
 
     public MailService(
         AppDbContext context,
-        IEmailService emailService)
+        IEmailService emailService,
+        MailHtmlSanitizer htmlSanitizer,
+        IWebHostEnvironment environment,
+        IConfiguration configuration)
     {
         _context = context;
         _emailService = emailService;
+        _htmlSanitizer = htmlSanitizer;
+        _environment = environment;
+        _configuration = configuration;
     }
 
     public async Task<bool> SendMailAsync(
         int senderUserId,
         string recipientEmail,
+        string? ccEmails,
+        string? bccEmails,
         string subject,
         string body,
-        int? parentMessageId = null)
+        int? parentMessageId = null,
+        IReadOnlyList<IFormFile>? attachments = null)
     {
-        var sender = await _context.Users
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x =>
-                x.Id == senderUserId &&
-                x.IsDeleted == false &&
-                x.IsActive == true);
+        var sender = await GetActiveUserAsync(senderUserId);
 
         if (sender == null)
         {
             return false;
         }
 
-        recipientEmail = recipientEmail.Trim();
-        subject = subject.Trim();
+        recipientEmail = recipientEmail?.Trim() ?? "";
+        subject = subject?.Trim() ?? "";
+
+        string safeBody = _htmlSanitizer.Sanitize(body ?? "");
 
         if (string.IsNullOrWhiteSpace(recipientEmail) ||
             string.IsNullOrWhiteSpace(subject) ||
-            string.IsNullOrWhiteSpace(body))
+            string.IsNullOrWhiteSpace(GetPlainText(safeBody)))
         {
             return false;
         }
@@ -49,7 +60,7 @@ public class MailService : IMailService
             .AsNoTracking()
             .FirstOrDefaultAsync(x =>
                 x.Email == recipientEmail &&
-                x.IsDeleted == false &&
+                x.IsDeleted != true &&
                 x.IsActive == true);
 
         string messageType =
@@ -63,8 +74,10 @@ public class MailService : IMailService
             SenderEmail = sender.Email,
             RecipientUserId = recipient?.Id,
             RecipientEmail = recipientEmail,
+            CcEmails = NormalizeRecipientList(ccEmails),
+            BccEmails = NormalizeRecipientList(bccEmails),
             Subject = subject,
-            Body = body,
+            Body = safeBody,
             IsRead = false,
             IsStarred = false,
             IsDraft = false,
@@ -74,6 +87,7 @@ public class MailService : IMailService
             IsPermanentlyDeletedBySender = false,
             IsPermanentlyDeletedByRecipient = false,
             SentAt = DateTime.Now,
+            ReadAt = null,
             MessageType = messageType,
             ParentMessageId = parentMessageId
         };
@@ -82,16 +96,33 @@ public class MailService : IMailService
 
         await _context.SaveChangesAsync();
 
+        var createdFiles = new List<string>();
+
         try
         {
-            string htmlBody = BuildHtmlBody(
-                sender.Name,
-                body);
+            await SaveAttachmentsAsync(
+                mail,
+                attachments,
+                createdFiles);
+
+            await _context.SaveChangesAsync();
+
+            var emailAttachments =
+                BuildEmailAttachments(
+                    mail.Attachments);
+
+            string htmlBody =
+                BuildEmailHtml(
+                    sender.Name,
+                    safeBody);
 
             await _emailService.SendEmailAsync(
-                recipientEmail,
-                subject,
-                htmlBody);
+                mail.RecipientEmail,
+                mail.CcEmails,
+                mail.BccEmails,
+                mail.Subject,
+                htmlBody,
+                emailAttachments);
 
             return true;
         }
@@ -101,6 +132,8 @@ public class MailService : IMailService
 
             await _context.SaveChangesAsync();
 
+            DeletePhysicalFiles(createdFiles);
+
             return false;
         }
     }
@@ -108,15 +141,14 @@ public class MailService : IMailService
     public async Task<int?> SaveDraftAsync(
         int senderUserId,
         string recipientEmail,
+        string? ccEmails,
+        string? bccEmails,
         string subject,
         string body,
-        int? draftId = null)
+        int? draftId = null,
+        IReadOnlyList<IFormFile>? attachments = null)
     {
-        var sender = await _context.Users
-            .FirstOrDefaultAsync(x =>
-                x.Id == senderUserId &&
-                x.IsDeleted == false &&
-                x.IsActive == true);
+        var sender = await GetActiveUserAsync(senderUserId);
 
         if (sender == null)
         {
@@ -128,6 +160,7 @@ public class MailService : IMailService
         if (draftId.HasValue)
         {
             draft = await _context.MailMessages
+                .Include(x => x.Attachments)
                 .FirstOrDefaultAsync(x =>
                     x.Id == draftId.Value &&
                     x.SenderUserId == senderUserId &&
@@ -140,15 +173,25 @@ public class MailService : IMailService
             }
         }
 
+        string safeBody =
+            _htmlSanitizer.Sanitize(
+                body ?? "");
+
         if (draft == null)
         {
             draft = new MailMessage
             {
                 SenderUserId = senderUserId,
                 SenderEmail = sender.Email,
-                RecipientEmail = recipientEmail?.Trim() ?? "",
-                Subject = subject?.Trim() ?? "",
-                Body = body ?? "",
+                RecipientEmail =
+                    recipientEmail?.Trim() ?? "",
+                CcEmails =
+                    NormalizeRecipientList(ccEmails),
+                BccEmails =
+                    NormalizeRecipientList(bccEmails),
+                Subject =
+                    subject?.Trim() ?? "",
+                Body = safeBody,
                 IsRead = false,
                 IsStarred = false,
                 IsDraft = true,
@@ -158,6 +201,7 @@ public class MailService : IMailService
                 IsPermanentlyDeletedBySender = false,
                 IsPermanentlyDeletedByRecipient = false,
                 SentAt = DateTime.Now,
+                ReadAt = null,
                 MessageType = "Draft"
             };
 
@@ -165,13 +209,44 @@ public class MailService : IMailService
         }
         else
         {
-            draft.RecipientEmail = recipientEmail?.Trim() ?? "";
-            draft.Subject = subject?.Trim() ?? "";
-            draft.Body = body ?? "";
-            draft.DraftSavedAt = DateTime.Now;
+            draft.RecipientEmail =
+                recipientEmail?.Trim() ?? "";
+
+            draft.CcEmails =
+                NormalizeRecipientList(ccEmails);
+
+            draft.BccEmails =
+                NormalizeRecipientList(bccEmails);
+
+            draft.Subject =
+                subject?.Trim() ?? "";
+
+            draft.Body =
+                safeBody;
+
+            draft.DraftSavedAt =
+                DateTime.Now;
         }
 
         await _context.SaveChangesAsync();
+
+        var createdFiles = new List<string>();
+
+        try
+        {
+            await SaveAttachmentsAsync(
+                draft,
+                attachments,
+                createdFiles);
+
+            await _context.SaveChangesAsync();
+        }
+        catch
+        {
+            DeletePhysicalFiles(createdFiles);
+
+            return null;
+        }
 
         return draft.Id;
     }
@@ -181,6 +256,7 @@ public class MailService : IMailService
         int userId)
     {
         var draft = await _context.MailMessages
+            .Include(x => x.Attachments)
             .FirstOrDefaultAsync(x =>
                 x.Id == draftId &&
                 x.SenderUserId == userId &&
@@ -192,21 +268,30 @@ public class MailService : IMailService
             return false;
         }
 
-        if (string.IsNullOrWhiteSpace(draft.RecipientEmail) ||
-            string.IsNullOrWhiteSpace(draft.Subject) ||
-            string.IsNullOrWhiteSpace(draft.Body))
+        var sender =
+            await GetActiveUserAsync(userId);
+
+        if (sender == null)
         {
             return false;
         }
 
-        var sender = await _context.Users
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x =>
-                x.Id == userId &&
-                x.IsDeleted == false &&
-                x.IsActive == true);
+        draft.RecipientEmail =
+            draft.RecipientEmail?.Trim() ?? "";
 
-        if (sender == null)
+        draft.Subject =
+            draft.Subject?.Trim() ?? "";
+
+        draft.Body =
+            _htmlSanitizer.Sanitize(
+                draft.Body ?? "");
+
+        if (string.IsNullOrWhiteSpace(
+                draft.RecipientEmail) ||
+            string.IsNullOrWhiteSpace(
+                draft.Subject) ||
+            string.IsNullOrWhiteSpace(
+                GetPlainText(draft.Body)))
         {
             return false;
         }
@@ -215,11 +300,15 @@ public class MailService : IMailService
             .AsNoTracking()
             .FirstOrDefaultAsync(x =>
                 x.Email == draft.RecipientEmail &&
-                x.IsDeleted == false &&
+                x.IsDeleted != true &&
                 x.IsActive == true);
 
-        draft.SenderEmail = sender.Email;
-        draft.RecipientUserId = recipient?.Id;
+        draft.SenderEmail =
+            sender.Email;
+
+        draft.RecipientUserId =
+            recipient?.Id;
+
         draft.MessageType =
             recipient != null
                 ? "Internal"
@@ -228,6 +317,7 @@ public class MailService : IMailService
         draft.IsDraft = false;
         draft.DraftSavedAt = null;
         draft.SentAt = DateTime.Now;
+
         draft.IsDeletedBySender = false;
         draft.IsDeletedByRecipient = false;
         draft.IsPermanentlyDeletedBySender = false;
@@ -237,14 +327,22 @@ public class MailService : IMailService
 
         try
         {
-            string htmlBody = BuildHtmlBody(
-                sender.Name,
-                draft.Body);
+            string htmlBody =
+                BuildEmailHtml(
+                    sender.Name,
+                    draft.Body);
+
+            var emailAttachments =
+                BuildEmailAttachments(
+                    draft.Attachments);
 
             await _emailService.SendEmailAsync(
                 draft.RecipientEmail,
+                draft.CcEmails,
+                draft.BccEmails,
                 draft.Subject,
-                htmlBody);
+                htmlBody,
+                emailAttachments);
 
             return true;
         }
@@ -264,6 +362,7 @@ public class MailService : IMailService
     {
         return await _context.MailMessages
             .AsNoTracking()
+            .Include(x => x.Attachments)
             .Where(x =>
                 x.RecipientUserId == userId &&
                 !x.IsDraft &&
@@ -278,6 +377,7 @@ public class MailService : IMailService
     {
         return await _context.MailMessages
             .AsNoTracking()
+            .Include(x => x.Attachments)
             .Where(x =>
                 x.SenderUserId == userId &&
                 !x.IsDraft &&
@@ -292,6 +392,7 @@ public class MailService : IMailService
     {
         return await _context.MailMessages
             .AsNoTracking()
+            .Include(x => x.Attachments)
             .Where(x =>
                 x.IsStarred &&
                 !x.IsDraft &&
@@ -317,11 +418,13 @@ public class MailService : IMailService
     {
         return await _context.MailMessages
             .AsNoTracking()
+            .Include(x => x.Attachments)
             .Where(x =>
                 x.SenderUserId == userId &&
                 x.IsDraft &&
                 !x.IsPermanentlyDeletedBySender)
-            .OrderByDescending(x => x.DraftSavedAt)
+            .OrderByDescending(
+                x => x.DraftSavedAt)
             .ToListAsync();
     }
 
@@ -330,6 +433,7 @@ public class MailService : IMailService
     {
         return await _context.MailMessages
             .AsNoTracking()
+            .Include(x => x.Attachments)
             .Where(x =>
                 !x.IsDraft &&
                 (
@@ -349,34 +453,13 @@ public class MailService : IMailService
             .ToListAsync();
     }
 
-    public async Task<MailMessage?> GetMessageAsync(
-        int messageId,
-        int userId)
-    {
-        return await _context.MailMessages
-            .FirstOrDefaultAsync(x =>
-                x.Id == messageId &&
-                !x.IsDraft &&
-                (
-                    (
-                        x.SenderUserId == userId &&
-                        !x.IsDeletedBySender &&
-                        !x.IsPermanentlyDeletedBySender
-                    )
-                    ||
-                    (
-                        x.RecipientUserId == userId &&
-                        !x.IsDeletedByRecipient &&
-                        !x.IsPermanentlyDeletedByRecipient
-                    )
-                ));
-    }
-
     public async Task<MailMessage?> GetDraftAsync(
         int draftId,
         int userId)
     {
         return await _context.MailMessages
+            .AsNoTracking()
+            .Include(x => x.Attachments)
             .FirstOrDefaultAsync(x =>
                 x.Id == draftId &&
                 x.SenderUserId == userId &&
@@ -384,15 +467,41 @@ public class MailService : IMailService
                 !x.IsPermanentlyDeletedBySender);
     }
 
+    public async Task<MailMessage?> GetMessageAsync(
+        int messageId,
+        int userId)
+    {
+        return await _context.MailMessages
+            .AsNoTracking()
+            .Include(x => x.Attachments)
+            .FirstOrDefaultAsync(x =>
+                x.Id == messageId &&
+                !x.IsDraft &&
+                (
+                    (
+                        x.RecipientUserId == userId &&
+                        !x.IsDeletedByRecipient &&
+                        !x.IsPermanentlyDeletedByRecipient
+                    )
+                    ||
+                    (
+                        x.SenderUserId == userId &&
+                        !x.IsDeletedBySender &&
+                        !x.IsPermanentlyDeletedBySender
+                    )
+                ));
+    }
+
     public async Task<bool> MarkAsReadAsync(
         int messageId,
         int userId)
     {
-        var mail = await _context.MailMessages
-            .FirstOrDefaultAsync(x =>
-                x.Id == messageId &&
-                x.RecipientUserId == userId &&
-                !x.IsDraft);
+        var mail =
+            await _context.MailMessages
+                .FirstOrDefaultAsync(x =>
+                    x.Id == messageId &&
+                    x.RecipientUserId == userId &&
+                    !x.IsDraft);
 
         if (mail == null)
         {
@@ -411,21 +520,23 @@ public class MailService : IMailService
         int messageId,
         int userId)
     {
-        var mail = await _context.MailMessages
-            .FirstOrDefaultAsync(x =>
-                x.Id == messageId &&
-                !x.IsDraft &&
-                (
-                    x.SenderUserId == userId ||
-                    x.RecipientUserId == userId
-                ));
+        var mail =
+            await _context.MailMessages
+                .FirstOrDefaultAsync(x =>
+                    x.Id == messageId &&
+                    !x.IsDraft &&
+                    (
+                        x.SenderUserId == userId ||
+                        x.RecipientUserId == userId
+                    ));
 
         if (mail == null)
         {
             return false;
         }
 
-        mail.IsStarred = !mail.IsStarred;
+        mail.IsStarred =
+            !mail.IsStarred;
 
         await _context.SaveChangesAsync();
 
@@ -436,11 +547,12 @@ public class MailService : IMailService
         int messageId,
         int userId)
     {
-        var mail = await _context.MailMessages
-            .FirstOrDefaultAsync(x =>
-                x.Id == messageId &&
-                x.RecipientUserId == userId &&
-                !x.IsDraft);
+        var mail =
+            await _context.MailMessages
+                .FirstOrDefaultAsync(x =>
+                    x.Id == messageId &&
+                    x.RecipientUserId == userId &&
+                    !x.IsDraft);
 
         if (mail == null)
         {
@@ -458,11 +570,12 @@ public class MailService : IMailService
         int messageId,
         int userId)
     {
-        var mail = await _context.MailMessages
-            .FirstOrDefaultAsync(x =>
-                x.Id == messageId &&
-                x.SenderUserId == userId &&
-                !x.IsDraft);
+        var mail =
+            await _context.MailMessages
+                .FirstOrDefaultAsync(x =>
+                    x.Id == messageId &&
+                    x.SenderUserId == userId &&
+                    !x.IsDraft);
 
         if (mail == null)
         {
@@ -480,20 +593,32 @@ public class MailService : IMailService
         int draftId,
         int userId)
     {
-        var draft = await _context.MailMessages
-            .FirstOrDefaultAsync(x =>
-                x.Id == draftId &&
-                x.SenderUserId == userId &&
-                x.IsDraft);
+        var draft =
+            await _context.MailMessages
+                .Include(x => x.Attachments)
+                .FirstOrDefaultAsync(x =>
+                    x.Id == draftId &&
+                    x.SenderUserId == userId &&
+                    x.IsDraft);
 
         if (draft == null)
         {
             return false;
         }
 
-        draft.IsPermanentlyDeletedBySender = true;
+        var files =
+            draft.Attachments
+                .Select(x =>
+                    GetPhysicalPath(
+                        x.StoragePath))
+                .ToList();
+
+        draft.IsPermanentlyDeletedBySender =
+            true;
 
         await _context.SaveChangesAsync();
+
+        DeletePhysicalFiles(files);
 
         return true;
     }
@@ -502,14 +627,15 @@ public class MailService : IMailService
         int messageId,
         int userId)
     {
-        var mail = await _context.MailMessages
-            .FirstOrDefaultAsync(x =>
-                x.Id == messageId &&
-                !x.IsDraft &&
-                (
-                    x.SenderUserId == userId ||
-                    x.RecipientUserId == userId
-                ));
+        var mail =
+            await _context.MailMessages
+                .FirstOrDefaultAsync(x =>
+                    x.Id == messageId &&
+                    !x.IsDraft &&
+                    (
+                        x.SenderUserId == userId ||
+                        x.RecipientUserId == userId
+                    ));
 
         if (mail == null)
         {
@@ -537,26 +663,35 @@ public class MailService : IMailService
         int messageId,
         int userId)
     {
-        var mail = await _context.MailMessages
-            .FirstOrDefaultAsync(x =>
-                x.Id == messageId &&
-                !x.IsDraft &&
-                (
+        var mail =
+            await _context.MailMessages
+                .Include(x => x.Attachments)
+                .FirstOrDefaultAsync(x =>
+                    x.Id == messageId &&
+                    !x.IsDraft &&
                     (
-                        x.SenderUserId == userId &&
-                        x.IsDeletedBySender
-                    )
-                    ||
-                    (
-                        x.RecipientUserId == userId &&
-                        x.IsDeletedByRecipient
-                    )
-                ));
+                        (
+                            x.SenderUserId == userId &&
+                            x.IsDeletedBySender
+                        )
+                        ||
+                        (
+                            x.RecipientUserId == userId &&
+                            x.IsDeletedByRecipient
+                        )
+                    ));
 
         if (mail == null)
         {
             return false;
         }
+
+        var files =
+            mail.Attachments
+                .Select(x =>
+                    GetPhysicalPath(
+                        x.StoragePath))
+                .ToList();
 
         if (mail.SenderUserId == userId)
         {
@@ -570,30 +705,275 @@ public class MailService : IMailService
 
         await _context.SaveChangesAsync();
 
+        DeletePhysicalFiles(files);
+
         return true;
     }
 
-    private static string BuildHtmlBody(
+    private async Task<User?> GetActiveUserAsync(
+        int userId)
+    {
+        return await _context.Users
+            .FirstOrDefaultAsync(x =>
+                x.Id == userId &&
+                x.IsDeleted != true &&
+                x.IsActive == true);
+    }
+
+    private async Task SaveAttachmentsAsync(
+        MailMessage mail,
+        IReadOnlyList<IFormFile>? files,
+        List<string> createdFiles)
+    {
+        if (files == null ||
+            files.Count == 0)
+        {
+            return;
+        }
+
+        int maxFiles =
+            _configuration
+                .GetValue<int?>(
+                    "MailAttachmentSettings:MaxFilesPerMail")
+            ?? 10;
+
+        int maxSizeMb =
+            _configuration
+                .GetValue<int?>(
+                    "MailAttachmentSettings:MaxFileSizeMb")
+            ?? 25;
+
+        long maxSize =
+            maxSizeMb *
+            1024L *
+            1024L;
+
+        var allowedExtensions =
+            _configuration
+                .GetSection(
+                    "MailAttachmentSettings:AllowedExtensions")
+                .Get<string[]>()
+            ?? Array.Empty<string>();
+
+        var validFiles =
+            files
+                .Where(x =>
+                    x != null &&
+                    x.Length > 0)
+                .ToList();
+
+        if (validFiles.Count > maxFiles)
+        {
+            throw new InvalidOperationException(
+                $"Maximum {maxFiles} attachments are allowed.");
+        }
+
+        string root =
+            Path.Combine(
+                _environment.ContentRootPath,
+                "App_Data",
+                "MailAttachments");
+
+        Directory.CreateDirectory(root);
+
+        foreach (var file in validFiles)
+        {
+            string originalName =
+                Path.GetFileName(
+                    file.FileName);
+
+            string extension =
+                Path.GetExtension(
+                    originalName)
+                .ToLowerInvariant();
+
+            if (file.Length > maxSize)
+            {
+                throw new InvalidOperationException(
+                    $"File {originalName} exceeds the {maxSizeMb} MB limit.");
+            }
+
+            if (!allowedExtensions.Any(x =>
+                    string.Equals(
+                        x,
+                        extension,
+                        StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new InvalidOperationException(
+                    $"File type {extension} is not allowed.");
+            }
+
+            string storedName =
+                $"{Guid.NewGuid():N}{extension}";
+
+            string physicalPath =
+                Path.Combine(
+                    root,
+                    storedName);
+
+            await using (
+                var stream =
+                    new FileStream(
+                        physicalPath,
+                        FileMode.CreateNew,
+                        FileAccess.Write,
+                        FileShare.None))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            createdFiles.Add(
+                physicalPath);
+
+            string relativePath =
+                Path.Combine(
+                    "App_Data",
+                    "MailAttachments",
+                    storedName)
+                .Replace(
+                    Path.DirectorySeparatorChar,
+                    '/');
+
+            var attachment =
+                new MailAttachment
+                {
+                    MailMessageId = mail.Id,
+                    OriginalFileName =
+                        originalName,
+                    StoredFileName =
+                        storedName,
+                    ContentType =
+                        string.IsNullOrWhiteSpace(
+                            file.ContentType)
+                            ? "application/octet-stream"
+                            : file.ContentType,
+                    FileSize =
+                        file.Length,
+                    StoragePath =
+                        relativePath,
+                    IsInline = false,
+                    ContentId = null,
+                    CreatedAt =
+                        DateTime.Now
+                };
+
+            mail.Attachments.Add(
+                attachment);
+        }
+    }
+
+    private List<EmailAttachment>
+        BuildEmailAttachments(
+            IEnumerable<MailAttachment> attachments)
+    {
+        return attachments
+            .Where(x =>
+                !string.IsNullOrWhiteSpace(
+                    x.StoragePath))
+            .Select(x =>
+                new EmailAttachment
+                {
+                    FilePath =
+                        GetPhysicalPath(
+                            x.StoragePath),
+                    FileName =
+                        x.OriginalFileName,
+                    ContentType =
+                        x.ContentType ??
+                        "application/octet-stream"
+                })
+            .ToList();
+    }
+
+    private string GetPhysicalPath(
+        string relativePath)
+    {
+        string clean =
+            relativePath
+                .Replace(
+                    '/',
+                    Path.DirectorySeparatorChar);
+
+        return Path.Combine(
+            _environment.ContentRootPath,
+            clean);
+    }
+
+    private void DeletePhysicalFiles(
+        IEnumerable<string> paths)
+    {
+        foreach (var path in paths)
+        {
+            try
+            {
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
+            }
+            catch
+            {
+                // Physical file cleanup failure is intentionally ignored.
+            }
+        }
+    }
+
+    private static string NormalizeRecipientList(
+        string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return "";
+        }
+
+        return string.Join(
+            ", ",
+            value.Split(
+                    new[]
+                    {
+                        ',',
+                        ';',
+                        '\r',
+                        '\n'
+                    },
+                    StringSplitOptions.RemoveEmptyEntries |
+                    StringSplitOptions.TrimEntries)
+                .Distinct(
+                    StringComparer.OrdinalIgnoreCase));
+    }
+
+    private static string GetPlainText(
+        string html)
+    {
+        var sanitizer =
+            new HtmlSanitizer();
+
+        string safe =
+            sanitizer.Sanitize(
+                html ?? "");
+
+        return System.Text.RegularExpressions.Regex
+            .Replace(
+                safe,
+                "<[^>]+>",
+                " ")
+            .Trim();
+    }
+
+    private static string BuildEmailHtml(
         string senderName,
         string body)
     {
-        string safeBody = body
-            .Replace("&", "&amp;")
-            .Replace("<", "&lt;")
-            .Replace(">", "&gt;")
-            .Replace("\"", "&quot;")
-            .Replace("\r\n", "<br>")
-            .Replace("\n", "<br>");
-
         return $"""
+            <!DOCTYPE html>
             <html>
-            <body>
-                <p>{safeBody}</p>
-                <hr>
-                <p>
-                    Sent by {senderName}
+            <body style="font-family:Arial,sans-serif;color:#202124;line-height:1.6;">
+                <div>{body}</div>
+                <hr style="border:0;border-top:1px solid #ddd;margin:24px 0;">
+                <div style="font-size:12px;color:#777;">
+                    Sent by {System.Net.WebUtility.HtmlEncode(senderName)}
                     through User Management System.
-                </p>
+                </div>
             </body>
             </html>
             """;

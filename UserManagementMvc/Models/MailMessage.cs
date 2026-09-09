@@ -12,6 +12,10 @@ public partial class MailMessage
 
     public string RecipientEmail { get; set; } = null!;
 
+    public string? CcEmails { get; set; }
+
+    public string? BccEmails { get; set; }
+
     public string Subject { get; set; } = null!;
 
     public string Body { get; set; } = null!;
@@ -50,4 +54,7 @@ public partial class MailMessage
 
     public virtual ICollection<MailMessage> Replies { get; set; }
         = new List<MailMessage>();
+
+    public virtual ICollection<MailAttachment> Attachments { get; set; }
+        = new List<MailAttachment>();
 }

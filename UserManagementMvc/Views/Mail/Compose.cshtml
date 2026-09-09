@@ -1,139 +1,1374 @@
 ﻿@model UserManagementMvc.ViewModels.MailComposeViewModel
 
+@using System.Text.Json
+@using System.Text.Encodings.Web
+
 @{
-    ViewData["Title"] = Model.DraftId.HasValue
-        ? "Edit Draft"
-        : "Compose Mail";
+    ViewData["Title"] = "Compose Mail";
+
+    var allowedExtensions =
+        ".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip";
+
+    var serializedTools =
+        JsonSerializer.Serialize(
+            Model.Tools?
+                .Where(x => x.IsEnabled)
+                .OrderBy(x => x.DisplayOrder)
+                .Select(x => x.ToolKey)
+            ?? Enumerable.Empty<string>());
+
+    var serializedSignatures =
+        JsonSerializer.Serialize(
+            Model.Signatures?.Select(x => new
+            {
+                id = x.Id,
+                name = x.Name,
+                html = x.SignatureHtml,
+                isDefault = x.IsDefault
+            })
+            ?? Enumerable.Empty<object>(),
+            new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Default
+            });
 }
+
+<style>
+    /* Compose page main container */
+    .mail-compose-page {
+        width: 100%;
+        min-height: calc(100vh - 80px);
+        padding: 28px;
+        box-sizing: border-box;
+        background: #f5f7fb;
+    }
+
+    /* Compose mail card */
+    .mail-compose-card {
+        width: 100%;
+        max-width: 1180px;
+        margin: 0 auto;
+        background: #ffffff;
+        border: 1px solid #e1e5ea;
+        border-radius: 14px;
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+    }
+
+    /* Compose header */
+    .mail-compose-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 20px 24px;
+        border-bottom: 1px solid #e5e7eb;
+        background: #ffffff;
+    }
+
+    .mail-compose-header h1 {
+        margin: 0;
+        color: #202124;
+        font-size: 28px;
+        font-weight: 700;
+        line-height: 1.25;
+    }
+
+    .mail-compose-subtitle {
+        margin-top: 5px;
+        color: #6b7280;
+        font-size: 14px;
+    }
+
+    /* Close compose button */
+    .mail-compose-close {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border: 0;
+        border-radius: 50%;
+        background: transparent;
+        color: #5f6368;
+        text-decoration: none;
+        font-size: 25px;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    .mail-compose-close:hover {
+        background: #f1f3f4;
+        color: #202124;
+    }
+
+    /* Compose form */
+    .mail-compose-form {
+        padding: 22px 24px 24px;
+    }
+
+    /* Validation summary */
+    .mail-validation-summary {
+        margin-bottom: 14px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        background: #fff4f4;
+        color: #b42318;
+        font-size: 14px;
+    }
+
+    .mail-validation-summary:empty {
+        display: none;
+    }
+
+    /* Recipient row */
+    .mail-recipient-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 12px;
+        width: 100%;
+    }
+
+    .mail-field {
+        width: 100%;
+        margin-bottom: 14px;
+    }
+
+    .mail-field-main {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .mail-field label {
+        display: block;
+        margin-bottom: 6px;
+        color: #374151;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .mail-input {
+        display: block;
+        width: 100%;
+        min-height: 44px;
+        padding: 10px 13px;
+        box-sizing: border-box;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        outline: none;
+        background: #ffffff;
+        color: #202124;
+        font-family: inherit;
+        font-size: 15px;
+        transition: border-color 0.15s ease,
+                    box-shadow 0.15s ease;
+    }
+
+    .mail-input:hover {
+        border-color: #b8bec7;
+    }
+
+    .mail-input:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    .mail-input::placeholder {
+        color: #9ca3af;
+    }
+
+    /* Cc and Bcc buttons */
+    .mail-recipient-actions {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding-bottom: 14px;
+        flex: 0 0 auto;
+    }
+
+    .mail-small-button {
+        min-width: 48px;
+        min-height: 36px;
+        padding: 6px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 7px;
+        background: #ffffff;
+        color: #374151;
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .mail-small-button:hover {
+        background: #f3f4f6;
+        border-color: #bfc5cd;
+    }
+
+    /* Hidden Cc/Bcc fields */
+    .mail-hidden-field {
+        display: none;
+    }
+
+    .mail-hidden-field.is-visible {
+        display: block;
+    }
+
+    /* Field validation */
+    .mail-field-error {
+        display: block;
+        margin-top: 5px;
+        color: #dc2626;
+        font-size: 13px;
+    }
+
+    /* Editor panel */
+    .mail-editor-panel {
+        position: relative;
+        width: 100%;
+        margin-top: 5px;
+    }
+
+    /* Toolbar */
+    .mail-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 5px;
+        width: 100%;
+        padding: 10px;
+        box-sizing: border-box;
+        border: 1px solid #dfe3e8;
+        border-radius: 9px 9px 0 0;
+        background: #f8f9fa;
+    }
+
+    /* Toolbar buttons */
+    .mail-toolbar-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 36px;
+        padding: 6px 10px;
+        border: 1px solid #d5d9df;
+        border-radius: 6px;
+        background: #ffffff;
+        color: #374151;
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 500;
+        line-height: 1.2;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: background 0.15s ease,
+                    border-color 0.15s ease,
+                    transform 0.05s ease,
+                    box-shadow 0.15s ease;
+    }
+
+    .mail-toolbar-button:hover {
+        background: #f1f3f4;
+        border-color: #c5cbd3;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    .mail-toolbar-button:active {
+        background: #e8eaed;
+        transform: translateY(1px);
+    }
+
+    /* Toolbar icon */
+    .mail-toolbar-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 20px;
+        margin-right: 5px;
+        color: #202124;
+        font-size: 15px;
+        line-height: 1;
+    }
+
+    /* Bold icon */
+    .mail-toolbar-icon.tool-icon-bold {
+        font-weight: 900;
+    }
+
+    /* Italic icon */
+    .mail-toolbar-icon.tool-icon-italic {
+        font-style: italic;
+        font-weight: 700;
+    }
+
+    /* Underline icon */
+    .mail-toolbar-icon.tool-icon-underline {
+        font-weight: 700;
+        text-decoration: underline;
+        text-decoration-thickness: 2px;
+        text-underline-offset: 2px;
+    }
+
+    /* Strike-through icon */
+    .mail-toolbar-icon.tool-icon-strike {
+        font-weight: 700;
+        text-decoration: line-through;
+        text-decoration-thickness: 2px;
+    }
+
+    /* Font icon */
+    .mail-toolbar-icon.tool-icon-font {
+        font-family: Georgia, serif;
+        font-weight: 700;
+    }
+
+    /* Font size icon */
+    .mail-toolbar-icon.tool-icon-font-size {
+        font-weight: 700;
+        font-size: 14px;
+    }
+
+    /* Text color icon */
+    .mail-toolbar-icon.tool-icon-color {
+        font-weight: 900;
+        text-decoration: underline;
+        text-decoration-thickness: 3px;
+        text-decoration-color: #2563eb;
+        text-underline-offset: 2px;
+    }
+
+    /* Remove formatting icon */
+    .mail-toolbar-icon.tool-icon-remove-format {
+        font-weight: 700;
+        text-decoration: line-through;
+    }
+
+    .mail-toolbar-label {
+        display: inline-block;
+    }
+
+    /* Toolbar popovers */
+    .mail-popover {
+        position: absolute;
+        z-index: 1000;
+        min-width: 160px;
+        padding: 8px;
+        border: 1px solid #d9dde3;
+        border-radius: 8px;
+        background: #ffffff;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.14);
+    }
+
+    .mail-popover[hidden] {
+        display: none !important;
+    }
+
+    .mail-popover button {
+        display: block;
+        width: 100%;
+        margin: 0 0 5px;
+        padding: 8px 10px;
+        border: 1px solid #e0e3e7;
+        border-radius: 6px;
+        background: #ffffff;
+        color: #374151;
+        font-family: inherit;
+        font-size: 13px;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .mail-popover button:last-child {
+        margin-bottom: 0;
+    }
+
+    .mail-popover button:hover {
+        background: #f3f4f6;
+    }
+
+    /* Text color popover */
+    .mail-color-popover {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        min-width: 150px;
+    }
+
+    .mail-color-popover button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        margin: 0;
+        padding: 0;
+        border-radius: 50%;
+        text-align: center;
+        font-size: 18px;
+    }
+
+    /* Editor wrapper */
+    .mail-editor-wrapper {
+        position: relative;
+        width: 100%;
+    }
+
+    /* Rich text editor */
+    .mail-editor {
+        width: 100%;
+        min-height: 300px;
+        max-height: 520px;
+        padding: 15px 16px;
+        box-sizing: border-box;
+        overflow-y: auto;
+        border: 1px solid #dfe3e8;
+        border-top: 0;
+        border-radius: 0 0 9px 9px;
+        outline: none;
+        background: #ffffff;
+        color: #202124;
+        font-family: Arial, sans-serif;
+        font-size: 15px;
+        line-height: 1.6;
+    }
+
+    .mail-editor:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+    }
+
+    .mail-editor:empty::before {
+        content: attr(data-placeholder);
+        color: #9ca3af;
+        pointer-events: none;
+    }
+
+    .mail-editor img {
+        max-width: 100%;
+        height: auto;
+    }
+
+    .mail-editor a {
+        color: #2563eb;
+    }
+
+    .mail-editor blockquote {
+        margin: 10px 0;
+        padding-left: 12px;
+        border-left: 3px solid #d1d5db;
+        color: #6b7280;
+    }
+
+    /* Hidden textarea used for model binding */
+    .mail-body-field {
+        position: absolute;
+        left: -99999px;
+        top: -99999px;
+        width: 1px;
+        height: 1px;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    /* Existing attachments */
+    .mail-existing-attachments {
+        margin-top: 18px;
+        padding: 13px 14px;
+        border: 1px solid #e1e5ea;
+        border-radius: 10px;
+        background: #ffffff;
+    }
+
+    .mail-existing-title {
+        margin-bottom: 9px;
+        color: #202124;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .mail-existing-attachment {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        width: 100%;
+        padding: 8px 4px;
+        box-sizing: border-box;
+        border-bottom: 1px solid #f0f1f2;
+        color: #2563eb;
+        text-decoration: none;
+    }
+
+    .mail-existing-attachment:last-child {
+        border-bottom: 0;
+    }
+
+    .mail-existing-attachment:hover {
+        background: #f8fafc;
+    }
+
+    .mail-existing-name {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .mail-existing-size {
+        flex: 0 0 auto;
+        color: #6b7280;
+        font-size: 12px;
+    }
+
+    /* Attachments panel */
+    .mail-attachments-panel {
+        width: 100%;
+        margin-top: 18px;
+        padding: 15px;
+        box-sizing: border-box;
+        border: 1px solid #e1e5ea;
+        border-radius: 10px;
+        background: #fafbfc;
+    }
+
+    .mail-attachments-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 15px;
+        margin-bottom: 12px;
+    }
+
+    .mail-attachments-title {
+        color: #202124;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .mail-attachments-subtitle {
+        margin-top: 3px;
+        color: #6b7280;
+        font-size: 12px;
+    }
+
+    .mail-attachment-add-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 36px;
+        padding: 7px 13px;
+        border: 1px solid #d5d9df;
+        border-radius: 7px;
+        background: #ffffff;
+        color: #374151;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        user-select: none;
+        white-space: nowrap;
+    }
+
+    .mail-attachment-add-button:hover {
+        background: #f1f3f4;
+        border-color: #c5cbd3;
+    }
+
+    .mail-attachment-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .mail-attachment-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        width: 100%;
+        min-height: 44px;
+        padding: 8px 10px;
+        box-sizing: border-box;
+        border: 1px solid #e2e6eb;
+        border-radius: 8px;
+        background: #ffffff;
+    }
+
+    .mail-attachment-info {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        min-width: 0;
+        flex: 1;
+    }
+
+    .mail-attachment-icon {
+        flex: 0 0 auto;
+        font-size: 19px;
+    }
+
+    .mail-attachment-name {
+        min-width: 0;
+        max-width: 550px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: #202124;
+        font-size: 14px;
+    }
+
+    .mail-attachment-size {
+        flex: 0 0 auto;
+        color: #6b7280;
+        font-size: 12px;
+    }
+
+    .mail-attachment-remove {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        width: 29px;
+        height: 29px;
+        padding: 0;
+        border: 0;
+        border-radius: 50%;
+        background: transparent;
+        color: #6b7280;
+        font-size: 20px;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    .mail-attachment-remove:hover {
+        background: #f1f3f4;
+        color: #d93025;
+    }
+
+    .mail-attachment-empty {
+        padding: 12px 0 4px;
+        color: #6b7280;
+        font-size: 13px;
+    }
+
+    .mail-attachment-help {
+        display: block;
+        margin-top: 10px;
+        color: #6b7280;
+        font-size: 12px;
+    }
+
+    /* Compose footer */
+    .mail-compose-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 20px;
+        padding-top: 16px;
+        border-top: 1px solid #e5e7eb;
+    }
+
+    .mail-footer-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .mail-send-button,
+    .mail-draft-button,
+    .mail-cancel-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        padding: 9px 18px;
+        box-sizing: border-box;
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 1;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .mail-send-button {
+        border: 1px solid #2563eb;
+        background: #2563eb;
+        color: #ffffff;
+    }
+
+    .mail-send-button:hover {
+        border-color: #1d4ed8;
+        background: #1d4ed8;
+    }
+
+    .mail-draft-button {
+        border: 1px solid #d1d5db;
+        background: #ffffff;
+        color: #374151;
+    }
+
+    .mail-draft-button:hover {
+        background: #f3f4f6;
+    }
+
+    .mail-cancel-button {
+        border: 1px solid #d1d5db;
+        background: #f3f4f6;
+        color: #374151;
+    }
+
+    .mail-cancel-button:hover {
+        background: #e5e7eb;
+    }
+
+    /* Disabled button state */
+    .mail-send-button:disabled,
+    .mail-draft-button:disabled,
+    .mail-cancel-button:disabled,
+    .mail-small-button:disabled,
+    .mail-toolbar-button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    /* Mobile compose layout */
+    @@media (max-width: 900px) {
+        .mail-compose-page {
+            padding: 15px;
+        }
+
+        .mail-compose-card {
+            max-width: 100%;
+        }
+
+        .mail-compose-form {
+            padding: 18px;
+        }
+
+        .mail-recipient-row {
+            align-items: stretch;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .mail-recipient-actions {
+            padding-bottom: 8px;
+        }
+
+        .mail-attachments-header {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .mail-attachment-add-button {
+            width: 100%;
+        }
+
+        .mail-compose-footer {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .mail-footer-left {
+            width: 100%;
+        }
+
+        .mail-send-button,
+        .mail-draft-button,
+        .mail-cancel-button {
+            flex: 1;
+        }
+    }
+
+    @@media (max-width: 600px) {
+        .mail-compose-page {
+            padding: 8px;
+        }
+
+        .mail-compose-header {
+            padding: 16px;
+        }
+
+        .mail-compose-header h1 {
+            font-size: 23px;
+        }
+
+        .mail-compose-form {
+            padding: 14px;
+        }
+
+        .mail-toolbar {
+            padding: 7px;
+        }
+
+        .mail-toolbar-button {
+            min-height: 32px;
+            padding: 5px 8px;
+            font-size: 12px;
+        }
+
+        .mail-toolbar-label {
+            display: none;
+        }
+
+        .mail-toolbar-icon {
+            margin-right: 0;
+        }
+
+        .mail-editor {
+            min-height: 240px;
+        }
+
+        .mail-attachment-item {
+            align-items: flex-start;
+        }
+
+        .mail-attachment-info {
+            flex-wrap: wrap;
+        }
+
+        .mail-attachment-name {
+            max-width: 220px;
+        }
+
+        .mail-footer-left {
+            flex-direction: column;
+        }
+
+        .mail-send-button,
+        .mail-draft-button,
+        .mail-cancel-button {
+            width: 100%;
+        }
+    }
+</style>
 
 <div class="mail-compose-page">
 
-    <div class="mail-compose-header">
+    <div class="mail-compose-card">
 
-        <div>
-            <h2>
-                @(Model.DraftId.HasValue ? "Edit Draft" : "New Message")
-            </h2>
+        <div class="mail-compose-header">
 
-            <p>
-                @(Model.DraftId.HasValue
-                    ? "Continue editing your saved message."
-                    : "Write and send a new message.")
-            </p>
-        </div>
+            <div>
+                <h1>Compose Mail</h1>
 
-    </div>
-
-    @if (!ViewData.ModelState.IsValid)
-    {
-        <div class="alert alert-danger">
-            @Html.ValidationSummary()
-        </div>
-    }
-
-    @if (TempData["Error"] != null)
-    {
-        <div class="alert alert-danger">
-            @TempData["Error"]
-        </div>
-    }
-
-    <form asp-controller="Mail"
-          asp-action="Compose"
-          method="post"
-          class="mail-compose-card">
-
-        @Html.AntiForgeryToken()
-
-        <input asp-for="DraftId" type="hidden" />
-
-        <div class="mail-compose-field">
-
-            <label asp-for="RecipientEmail">
-                To
-            </label>
-
-            <input asp-for="RecipientEmail"
-                   class="form-control"
-                   type="email"
-                   placeholder="recipient@example.com" />
-
-            <span asp-validation-for="RecipientEmail"
-                  class="text-danger">
-            </span>
-
-        </div>
-
-        <div class="mail-compose-field">
-
-            <label asp-for="Subject">
-                Subject
-            </label>
-
-            <input asp-for="Subject"
-                   class="form-control"
-                   placeholder="Subject" />
-
-            <span asp-validation-for="Subject"
-                  class="text-danger">
-            </span>
-
-        </div>
-
-        <div class="mail-compose-field">
-
-            <label asp-for="Body">
-                Message
-            </label>
-
-            <textarea asp-for="Body"
-                      class="form-control mail-message-editor"
-                      rows="14"
-                      placeholder="Write your message..."></textarea>
-
-            <span asp-validation-for="Body"
-                  class="text-danger">
-            </span>
-
-        </div>
-
-        <div class="mail-compose-footer">
-
-            @if (Model.DraftId.HasValue)
-            {
-                <button type="submit"
-                        formaction="@Url.Action("SendDraft", "Mail", new { id = Model.DraftId })"
-                        class="mail-primary-button">
-                    Send
-                </button>
-            }
-            else
-            {
-                <button type="submit"
-                        class="mail-primary-button">
-                    Send
-                </button>
-            }
-
-            <button type="submit"
-                    formaction="@Url.Action("SaveDraft", "Mail")"
-                    class="mail-secondary-button">
-                Save Draft
-            </button>
+                <div class="mail-compose-subtitle">
+                    Write and send a new message
+                </div>
+            </div>
 
             <a asp-controller="Mail"
                asp-action="Inbox"
-               class="mail-secondary-button">
-                Cancel
+               class="mail-compose-close"
+               title="Close">
+                ×
             </a>
 
         </div>
 
-    </form>
+        <form asp-controller="Mail"
+              asp-action="Compose"
+              method="post"
+              enctype="multipart/form-data"
+              id="mailComposeForm"
+              class="mail-compose-form">
+
+            @Html.AntiForgeryToken()
+
+            <input asp-for="DraftId"
+                   type="hidden" />
+
+            <input asp-for="ReplyToMessageId"
+                   type="hidden" />
+
+            <div asp-validation-summary="ModelOnly"
+                 class="mail-validation-summary">
+            </div>
+
+            <!-- Recipient field -->
+            <div class="mail-recipient-row">
+
+                <div class="mail-field mail-field-main">
+
+                    <label asp-for="RecipientEmail">
+                        To
+                    </label>
+
+                    <input asp-for="RecipientEmail"
+                           class="mail-input"
+                           list="mailRecipients"
+                           autocomplete="off"
+                           placeholder="Recipient email address" />
+
+                    <datalist id="mailRecipients">
+
+                        @if (Model.Recipients != null)
+                        {
+                            foreach (var recipient in Model.Recipients)
+                            {
+                                <option value="@recipient.Email">
+                                    @recipient.Name
+                                </option>
+                            }
+                        }
+
+                    </datalist>
+
+                    <span asp-validation-for="RecipientEmail"
+                          class="mail-field-error">
+                    </span>
+
+                </div>
+
+                <div class="mail-recipient-actions">
+
+                    <button type="button"
+                            id="showCcButton"
+                            class="mail-small-button">
+                        Cc
+                    </button>
+
+                    <button type="button"
+                            id="showBccButton"
+                            class="mail-small-button">
+                        Bcc
+                    </button>
+
+                </div>
+
+            </div>
+
+            <!-- Cc field -->
+            <div id="ccField"
+                 class="mail-field mail-hidden-field">
+
+                <label asp-for="CcEmails">
+                    Cc
+                </label>
+
+                <input asp-for="CcEmails"
+                       class="mail-input"
+                       placeholder="Comma-separated email addresses" />
+
+                <span asp-validation-for="CcEmails"
+                      class="mail-field-error">
+                </span>
+
+            </div>
+
+            <!-- Bcc field -->
+            <div id="bccField"
+                 class="mail-field mail-hidden-field">
+
+                <label asp-for="BccEmails">
+                    Bcc
+                </label>
+
+                <input asp-for="BccEmails"
+                       class="mail-input"
+                       placeholder="Comma-separated email addresses" />
+
+                <span asp-validation-for="BccEmails"
+                      class="mail-field-error">
+                </span>
+
+            </div>
+
+            <!-- Subject field -->
+            <div class="mail-field">
+
+                <label asp-for="Subject">
+                    Subject
+                </label>
+
+                <input asp-for="Subject"
+                       class="mail-input"
+                       maxlength="255"
+                       placeholder="Subject" />
+
+                <span asp-validation-for="Subject"
+                      class="mail-field-error">
+                </span>
+
+            </div>
+
+            <!-- Rich text editor -->
+            <div class="mail-editor-panel">
+
+                <div class="mail-toolbar"
+                     id="mailComposeToolbar">
+
+                    @if (Model.Tools != null &&
+                         Model.Tools.Count > 0)
+                    {
+                        foreach (var tool in Model.Tools
+                            .Where(x => x.IsEnabled)
+                            .OrderBy(x => x.DisplayOrder))
+                        {
+                            string icon =
+                                tool.ToolKey switch
+                                {
+                                    "undo" => "↶",
+                                    "redo" => "↷",
+                                    "font" => "A",
+                                    "fontSize" => "A↕",
+                                    "bold" => "B",
+                                    "italic" => "I",
+                                    "underline" => "U",
+                                    "textColor" => "A",
+                                    "align" => "☰",
+                                    "orderedList" => "1.",
+                                    "unorderedList" => "•",
+                                    "outdent" => "⇤",
+                                    "indent" => "⇥",
+                                    "quote" => "❝",
+                                    "strike" => "S",
+                                    "removeFormat" => "Tx",
+                                    "attachment" => "📎",
+                                    "link" => "🔗",
+                                    "emoji" => "😊",
+                                    "image" => "🖼",
+                                    "signature" => "✍",
+                                    "confidential" => "🔒",
+                                    _ => "•"
+                                };
+
+                            string iconClass =
+                                tool.ToolKey switch
+                                {
+                                    "font" => "tool-icon-font",
+                                    "fontSize" => "tool-icon-font-size",
+                                    "bold" => "tool-icon-bold",
+                                    "italic" => "tool-icon-italic",
+                                    "underline" => "tool-icon-underline",
+                                    "textColor" => "tool-icon-color",
+                                    "strike" => "tool-icon-strike",
+                                    "removeFormat" => "tool-icon-remove-format",
+                                    _ => ""
+                                };
+
+                            <button type="button"
+                                    class="mail-toolbar-button"
+                                    data-tool="@tool.ToolKey"
+                                    title="@tool.DisplayName"
+                                    aria-label="@tool.DisplayName">
+
+                                <span class="mail-toolbar-icon @iconClass">
+                                    @icon
+                                </span>
+
+                                <span class="mail-toolbar-label">
+                                    @tool.DisplayName
+                                </span>
+
+                            </button>
+                        }
+                    }
+
+                </div>
+
+                <!-- Font popover -->
+                <div id="fontPopover"
+                     class="mail-popover"
+                     hidden>
+
+                    <button type="button"
+                            data-font="Arial">
+                        Arial
+                    </button>
+
+                    <button type="button"
+                            data-font="Verdana">
+                        Verdana
+                    </button>
+
+                    <button type="button"
+                            data-font="Georgia">
+                        Georgia
+                    </button>
+
+                    <button type="button"
+                            data-font="Times New Roman">
+                        Times New Roman
+                    </button>
+
+                </div>
+
+                <!-- Font size popover -->
+                <div id="fontSizePopover"
+                     class="mail-popover"
+                     hidden>
+
+                    <button type="button"
+                            data-size="1">
+                        Small
+                    </button>
+
+                    <button type="button"
+                            data-size="3">
+                        Normal
+                    </button>
+
+                    <button type="button"
+                            data-size="5">
+                        Large
+                    </button>
+
+                    <button type="button"
+                            data-size="7">
+                        Huge
+                    </button>
+
+                </div>
+
+                <!-- Color popover -->
+                <div id="colorPopover"
+                     class="mail-popover mail-color-popover"
+                     hidden>
+
+                    <button type="button"
+                            data-color="#000000"
+                            title="Black"
+                            style="color:#000000;">
+                        ●
+                    </button>
+
+                    <button type="button"
+                            data-color="#d32f2f"
+                            title="Red"
+                            style="color:#d32f2f;">
+                        ●
+                    </button>
+
+                    <button type="button"
+                            data-color="#1976d2"
+                            title="Blue"
+                            style="color:#1976d2;">
+                        ●
+                    </button>
+
+                    <button type="button"
+                            data-color="#388e3c"
+                            title="Green"
+                            style="color:#388e3c;">
+                        ●
+                    </button>
+
+                    <button type="button"
+                            data-color="#7b1fa2"
+                            title="Purple"
+                            style="color:#7b1fa2;">
+                        ●
+                    </button>
+
+                    <button type="button"
+                            data-color="#f57c00"
+                            title="Orange"
+                            style="color:#f57c00;">
+                        ●
+                    </button>
+
+                </div>
+
+                <!-- Alignment popover -->
+                <div id="alignPopover"
+                     class="mail-popover"
+                     hidden>
+
+                    <button type="button"
+                            data-align="justifyLeft">
+                        ← Left
+                    </button>
+
+                    <button type="button"
+                            data-align="justifyCenter">
+                        ↔ Center
+                    </button>
+
+                    <button type="button"
+                            data-align="justifyRight">
+                        → Right
+                    </button>
+
+                    <button type="button"
+                            data-align="justifyFull">
+                        ☰ Justify
+                    </button>
+
+                </div>
+
+                <div class="mail-editor-wrapper">
+
+                    <div id="mailEditor"
+                         class="mail-editor"
+                         contenteditable="true"
+                         spellcheck="true"
+                         role="textbox"
+                         aria-multiline="true"
+                         data-placeholder="Write your message...">@Html.Raw(Model.Body)</div>
+
+                    <textarea asp-for="Body"
+                              id="mailBodyField"
+                              class="mail-body-field"></textarea>
+
+                </div>
+
+                <span asp-validation-for="Body"
+                      class="mail-field-error">
+                </span>
+
+            </div>
+
+            <!-- Existing attachments -->
+            @if (Model.ExistingAttachments != null &&
+                 Model.ExistingAttachments.Count > 0)
+            {
+                <div class="mail-existing-attachments">
+
+                    <div class="mail-existing-title">
+                        Existing attachments
+                    </div>
+
+                    @foreach (var attachment in Model.ExistingAttachments)
+                    {
+                        <a asp-controller="Mail"
+                           asp-action="DownloadAttachment"
+                           asp-route-id="@attachment.Id"
+                           class="mail-existing-attachment">
+
+                            <span>
+                                📎
+                            </span>
+
+                            <span class="mail-existing-name">
+                                @attachment.OriginalFileName
+                            </span>
+
+                            <span class="mail-existing-size">
+                                @FormatFileSize(attachment.FileSize)
+                            </span>
+
+                        </a>
+                    }
+
+                </div>
+            }
+
+            <!-- New attachments -->
+            <div class="mail-attachments-panel">
+
+                <div class="mail-attachments-header">
+
+                    <div>
+                        <div class="mail-attachments-title">
+                            Attachments
+                            (<span id="mailAttachmentCount">0</span>)
+                        </div>
+
+                        <div class="mail-attachments-subtitle">
+                            Add multiple files to the same email.
+                        </div>
+                    </div>
+
+                    <label for="mailAttachmentInput"
+                           class="mail-attachment-add-button">
+                        📎 Add files
+                    </label>
+
+                </div>
+
+                <input type="file"
+                       id="mailAttachmentInput"
+                       name="Attachments"
+                       multiple
+                       hidden
+                       accept="@allowedExtensions" />
+
+                <div id="mailAttachmentList"
+                     class="mail-attachment-list">
+                </div>
+
+                <div id="mailAttachmentEmpty"
+                     class="mail-attachment-empty">
+                    No attachments selected.
+                </div>
+
+                <div class="mail-attachment-help">
+                    Maximum 10 files per mail · Maximum 25 MB per file
+                </div>
+
+            </div>
+
+            <!-- Compose actions -->
+            <div class="mail-compose-footer">
+
+                <div class="mail-footer-left">
+
+                    <button type="submit"
+                            class="mail-send-button">
+                        📨 Send
+                    </button>
+
+                    <button type="submit"
+                            formaction="@Url.Action("SaveDraft", "Mail")"
+                            class="mail-draft-button">
+                        💾 Save Draft
+                    </button>
+
+                </div>
+
+                <a asp-controller="Mail"
+                   asp-action="Inbox"
+                   class="mail-cancel-button">
+                    Cancel
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
 
 </div>
+
+@functions
+{
+    private static string FormatFileSize(long bytes)
+    {
+        if (bytes < 1024)
+        {
+            return $"{bytes} B";
+        }
+
+        if (bytes < 1024 * 1024)
+        {
+            return $"{bytes / 1024d:0.##} KB";
+        }
+
+        if (bytes < 1024 * 1024 * 1024)
+        {
+            return $"{bytes / 1024d / 1024d:0.##} MB";
+        }
+
+        return $"{bytes / 1024d / 1024d / 1024d:0.##} GB";
+    }
+}
 
 @section Scripts
 {
     <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        window.mailComposeConfig = {
+            tools: @Html.Raw(serializedTools),
+            signatures: @Html.Raw(serializedSignatures)
+        };
+    </script>
+
+    <script src="~/js/mail-composer.js"
+            asp-append-version="true"></script>
+
+    <script src="~/js/mail-attachments.js"
+            asp-append-version="true"></script>
 }

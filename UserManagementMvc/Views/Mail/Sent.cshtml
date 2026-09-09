@@ -1,7 +1,32 @@
 ﻿@model List<UserManagementMvc.Models.MailMessage>
 
+@using System.Text.RegularExpressions
+@using System.Net
+
 @{
     ViewData["Title"] = "Sent";
+
+    string GetPreview(string? html)
+    {
+        if (string.IsNullOrWhiteSpace(html))
+        {
+            return string.Empty;
+        }
+
+        string text = Regex.Replace(
+            html,
+            "<.*?>",
+            " ");
+
+        text = WebUtility.HtmlDecode(text);
+
+        text = Regex.Replace(
+            text,
+            @"\s+",
+            " ");
+
+        return text.Trim();
+    }
 }
 
 <div class="mail-page">
@@ -21,14 +46,36 @@
 
     </div>
 
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["Success"]
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">
+            @TempData["Error"]
+        </div>
+    }
+
     <div class="mail-list">
 
-        @if (Model.Count == 0)
+        @if (Model == null || Model.Count == 0)
         {
             <div class="mail-empty">
-                <div class="mail-empty-icon">↗</div>
+
+                <div class="mail-empty-icon">
+                    ↗
+                </div>
+
                 <h4>No sent messages</h4>
-                <p>Messages you send will appear here.</p>
+
+                <p>
+                    Messages you send will appear here.
+                </p>
+
             </div>
         }
         else
@@ -54,8 +101,11 @@
                                    value="Sent" />
 
                             <button type="submit"
-                                    class="mail-star-button @(mail.IsStarred ? "active" : "")">
+                                    class="mail-star-button @(mail.IsStarred ? "active" : "")"
+                                    title="@(mail.IsStarred ? "Remove star" : "Star")">
+
                                 @(mail.IsStarred ? "★" : "☆")
+
                             </button>
 
                         </form>
@@ -74,11 +124,24 @@
                             </div>
 
                             <div class="mail-row-subject">
-                                @mail.Subject
+
+                                @(string.IsNullOrWhiteSpace(mail.Subject)
+                                    ? "(No subject)"
+                                    : mail.Subject)
+
+                                @if (mail.Attachments != null &&
+                                     mail.Attachments.Count > 0)
+                                {
+                                    <span class="mail-attachment-indicator"
+                                          title="This message has attachments">
+                                        📎 @mail.Attachments.Count
+                                    </span>
+                                }
+
                             </div>
 
                             <div class="mail-row-preview">
-                                @mail.Body
+                                @GetPreview(mail.Body)
                             </div>
 
                         </div>

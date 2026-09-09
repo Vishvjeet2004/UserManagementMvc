@@ -1,4 +1,5 @@
-﻿using UserManagementMvc.Models;
+﻿using Microsoft.AspNetCore.Http;
+using UserManagementMvc.Models;
 
 namespace UserManagementMvc.Services;
 
@@ -7,16 +8,22 @@ public interface IMailService
     Task<bool> SendMailAsync(
         int senderUserId,
         string recipientEmail,
+        string? ccEmails,
+        string? bccEmails,
         string subject,
         string body,
-        int? parentMessageId = null);
+        int? parentMessageId = null,
+        IReadOnlyList<IFormFile>? attachments = null);
 
     Task<int?> SaveDraftAsync(
         int senderUserId,
         string recipientEmail,
+        string? ccEmails,
+        string? bccEmails,
         string subject,
         string body,
-        int? draftId = null);
+        int? draftId = null,
+        IReadOnlyList<IFormFile>? attachments = null);
 
     Task<bool> SendDraftAsync(
         int draftId,

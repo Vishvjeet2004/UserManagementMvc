@@ -4,7 +4,7 @@ using UserManagementMvc.Models;
 
 namespace UserManagementMvc.ViewModels;
 
-public class MailComposeViewModel
+public sealed class MailComposeViewModel
 {
     public int? DraftId { get; set; }
 
@@ -25,13 +25,18 @@ public class MailComposeViewModel
 
     public int? ReplyToMessageId { get; set; }
 
-    public List<IFormFile> Attachments { get; set; } = new();
+    public List<IFormFile> Attachments { get; set; } =
+        new();
 
-    public List<MailAttachment> ExistingAttachments { get; set; } = new();
+    public List<MailAttachment> ExistingAttachments { get; set; } =
+        new();
 
-    public List<User> Recipients { get; set; } = new();
+    public List<User> Recipients { get; set; } =
+        new();
 
-    public List<MailComposerTool> Tools { get; set; } = new();
+    public List<MailComposerTool> Tools { get; set; } =
+        new();
 
-    public List<MailSignature> Signatures { get; set; } = new();
+    public List<MailSignature> Signatures { get; set; } =
+        new();
 }

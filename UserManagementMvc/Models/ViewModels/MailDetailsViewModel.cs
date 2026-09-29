@@ -1,4 +1,7 @@
-﻿namespace UserManagementMvc.ViewModels;
+﻿using UserManagementMvc.Models;
+using UserManagementMvc.Services;
+
+namespace UserManagementMvc.ViewModels;
 
 public class MailDetailsViewModel
 {
@@ -17,4 +20,19 @@ public class MailDetailsViewModel
     public bool IsRead { get; set; }
 
     public string MessageType { get; set; } = "";
+
+    public bool IsStarred { get; set; }
+
+    public string? CcEmails { get; set; }
+
+    public string? BccEmails { get; set; }
+
+    public List<MailAttachment> Attachments { get; set; } = new();
+
+    public MailMessage? DatabaseMessage { get; set; }
+
+    public ServerMailMessage? ServerMessage { get; set; }
+
+    public bool IsServerMessage =>
+        ServerMessage != null;
 }

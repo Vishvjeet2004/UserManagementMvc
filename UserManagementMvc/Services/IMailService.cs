@@ -29,27 +29,22 @@ public interface IMailService
         int draftId,
         int userId);
 
-    Task<List<MailMessage>> GetInboxAsync(
-        int userId);
+    Task<List<MailMessage>> GetInboxAsync(int userId);
+    Task<List<MailMessage>> GetSentAsync(int userId);
+    Task<List<MailMessage>> GetStarredAsync(int userId);
+    Task<List<MailMessage>> GetDraftsAsync(int userId);
+    Task<List<MailMessage>> GetTrashAsync(int userId);
 
-    Task<List<MailMessage>> GetSentAsync(
-        int userId);
-
-    Task<List<MailMessage>> GetStarredAsync(
-        int userId);
-
-    Task<List<MailMessage>> GetDraftsAsync(
-        int userId);
-
-    Task<List<MailMessage>> GetTrashAsync(
+    Task<MailMessage?> GetDraftAsync(
+        int draftId,
         int userId);
 
     Task<MailMessage?> GetMessageAsync(
         int messageId,
         int userId);
 
-    Task<MailMessage?> GetDraftAsync(
-        int draftId,
+    Task<MailAttachment?> GetAttachmentAsync(
+        int attachmentId,
         int userId);
 
     Task<bool> MarkAsReadAsync(

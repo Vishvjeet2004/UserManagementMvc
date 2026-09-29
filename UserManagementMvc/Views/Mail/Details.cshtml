@@ -1,198 +1,579 @@
-﻿@model UserManagementMvc.Models.MailMessage
+﻿@model UserManagementMvc.ViewModels.MailDetailsViewModel
 
+@using UserManagementMvc.Models
 @using UserManagementMvc.Services
 
-@inject MailHtmlSanitizer HtmlSanitizer
-
 @{
-    ViewData["Title"] = string.IsNullOrWhiteSpace(Model.Subject)
-        ? "Mail"
-        : Model.Subject;
+    ViewData["Title"] = "Mail Details";
 
-    string safeBody =
-        HtmlSanitizer.Sanitize(
-            Model.Body ?? string.Empty);
+    bool isServerMessage =
+        Model.ServerMessage != null;
+
+    string sender =
+        isServerMessage
+            ? Model.ServerMessage!.SenderEmail
+            : Model.DatabaseMessage!.SenderEmail;
+
+    string recipient =
+        isServerMessage
+            ? Model.ServerMessage!.RecipientEmail
+            : Model.DatabaseMessage!.RecipientEmail;
+
+    string subject =
+        isServerMessage
+            ? Model.ServerMessage!.Subject
+            : Model.DatabaseMessage!.Subject;
+
+    string body =
+        isServerMessage
+            ? Model.ServerMessage!.Body
+            : Model.DatabaseMessage!.Body;
+
+    DateTime sentAt =
+        isServerMessage
+            ? Model.ServerMessage!.SentAt
+            : Model.DatabaseMessage!.SentAt;
+
+    bool isStarred =
+        isServerMessage
+            ? Model.ServerMessage!.IsStarred
+            : Model.DatabaseMessage!.IsStarred;
+
+    string messageId =
+        isServerMessage
+            ? Model.ServerMessage!.Id
+            : Model.DatabaseMessage!.Id.ToString();
+
+    string? ccEmails =
+        isServerMessage
+            ? Model.ServerMessage!.CcEmails
+            : Model.DatabaseMessage!.CcEmails;
+
+    string? bccEmails =
+        isServerMessage
+            ? Model.ServerMessage!.BccEmails
+            : Model.DatabaseMessage!.BccEmails;
+
+    List<MailAttachment> databaseAttachments =
+        Model.DatabaseMessage?.Attachments?.ToList()
+        ?? new List<MailAttachment>();
+
+    List<ServerMailAttachment> serverAttachments =
+        Model.ServerMessage?.Attachments?.ToList()
+        ?? new List<ServerMailAttachment>();
+
+    string FormatFileSize(long bytes)
+    {
+        if (bytes < 1024)
+        {
+            return $"{bytes} B";
+        }
+
+        if (bytes < 1024 * 1024)
+        {
+            return $"{bytes / 1024d:0.##} KB";
+        }
+
+        if (bytes < 1024 * 1024 * 1024)
+        {
+            return $"{bytes / (1024d * 1024d):0.##} MB";
+        }
+
+        return $"{bytes / (1024d * 1024d * 1024d):0.##} GB";
+    }
+
+    bool IsImage(
+        string? contentType,
+        string? fileName)
+    {
+        if (!string.IsNullOrWhiteSpace(contentType) &&
+            contentType.StartsWith(
+                "image/",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            return false;
+        }
+
+        string extension =
+            System.IO.Path.GetExtension(fileName);
+
+        return extension.Equals(
+                   ".jpg",
+                   StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(
+                   ".jpeg",
+                   StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(
+                   ".png",
+                   StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(
+                   ".gif",
+                   StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(
+                   ".webp",
+                   StringComparison.OrdinalIgnoreCase);
+    }
+
+    bool IsPdf(
+        string? contentType,
+        string? fileName)
+    {
+        if (!string.IsNullOrWhiteSpace(contentType) &&
+            contentType.Equals(
+                "application/pdf",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            return false;
+        }
+
+        return System.IO.Path.GetExtension(fileName)
+            .Equals(
+                ".pdf",
+                StringComparison.OrdinalIgnoreCase);
+    }
 }
 
-<div class="mail-page">
+<div class="mail-details-page">
 
-    <div class="mail-page-header">
-
-        <div>
-            <h2>Mail</h2>
-            <p>Message details and attachments.</p>
-        </div>
+    <div class="mail-details-toolbar">
 
         <a asp-controller="Mail"
            asp-action="Inbox"
-           class="mail-primary-button">
+           class="mail-button">
             ← Back to Inbox
         </a>
 
+        <div class="mail-details-toolbar-right">
+
+            <form asp-controller="Mail"
+                  asp-action="ToggleStar"
+                  method="post">
+
+                @Html.AntiForgeryToken()
+
+                <input type="hidden"
+                       name="id"
+                       value="@messageId" />
+
+                <button type="submit"
+                        class="mail-button mail-star-detail-button @(isStarred ? "active" : "")">
+
+                    @(isStarred ? "★ Starred" : "☆ Star")
+
+                </button>
+
+            </form>
+
+            <a asp-controller="Mail"
+               asp-action="DeleteInbox"
+               asp-route-id="@messageId"
+               class="mail-button mail-button-danger">
+                Delete
+            </a>
+
+        </div>
+
     </div>
 
-    <div class="mail-details-card">
+    <article class="mail-details-card">
 
-        <div class="mail-details-header">
+        <header class="mail-details-header">
 
-            <div class="mail-details-subject">
+            <h1 class="mail-details-subject">
 
-                <h3>
-                    @(string.IsNullOrWhiteSpace(Model.Subject)
-                        ? "(No subject)"
-                        : Model.Subject)
-                </h3>
+                @(string.IsNullOrWhiteSpace(subject)
+                    ? "(No subject)"
+                    : subject)
 
-                @if (string.Equals(
-                    Model.MessageType,
-                    "External",
-                    StringComparison.OrdinalIgnoreCase))
-                {
-                    <span class="mail-type-badge">
-                        External
+            </h1>
+
+            <div class="mail-details-meta">
+
+                <span>
+                    <strong>From:</strong>
+                    @sender
+                </span>
+
+                <span class="mail-details-separator">
+                    •
+                </span>
+
+                <span>
+                    <strong>To:</strong>
+                    @recipient
+                </span>
+
+                <span class="mail-details-separator">
+                    •
+                </span>
+
+                <span>
+                    @sentAt.ToString(
+                        "dd MMM yyyy, h:mm tt")
+                </span>
+
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(ccEmails))
+            {
+                <div class="mail-details-secondary">
+
+                    <strong>Cc:</strong>
+                    @ccEmails
+
+                </div>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(bccEmails))
+            {
+                <div class="mail-details-secondary">
+
+                    <strong>Bcc:</strong>
+                    @bccEmails
+
+                </div>
+            }
+
+        </header>
+
+        <section class="mail-details-body">
+
+            @Html.Raw(body)
+
+        </section>
+
+        @if (isServerMessage &&
+             serverAttachments.Count > 0)
+        {
+            <section class="mail-details-attachments">
+
+                <div class="mail-details-section-title">
+
+                    Attachments
+
+                    <span>
+                        (@serverAttachments.Count)
                     </span>
+
+                </div>
+
+                @foreach (var attachment in serverAttachments)
+                {
+                    string attachmentId =
+                        attachment.Id;
+
+                    string fileName =
+                        string.IsNullOrWhiteSpace(
+                            attachment.OriginalFileName)
+                            ? "Attachment"
+                            : attachment.OriginalFileName;
+
+                    string contentType =
+                        attachment.ContentType ?? "";
+
+                    bool image =
+                        IsImage(
+                            contentType,
+                            fileName);
+
+                    bool pdf =
+                        IsPdf(
+                            contentType,
+                            fileName);
+
+                    string downloadUrl =
+                        Url.Action(
+                            "DownloadAttachment",
+                            "Mail",
+                            new
+                            {
+                                id = attachmentId
+                            }) ?? "#";
+
+                    string previewUrl =
+                        Url.Action(
+                            "PreviewAttachment",
+                            "Mail",
+                            new
+                            {
+                                id = attachmentId
+                            }) ?? "#";
+
+                    <div class="mail-detail-attachment">
+
+                        @if (image)
+                        {
+                            <div class="mail-detail-image-preview">
+
+                                <a href="@previewUrl"
+                                   target="_blank"
+                                   rel="noopener noreferrer">
+
+                                    <img src="@previewUrl"
+                                         alt="@fileName"
+                                         loading="lazy" />
+
+                                </a>
+
+                            </div>
+
+                            <div class="mail-details-attachment-actions">
+
+                                <a href="@previewUrl"
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   class="mail-details-attachment-open">
+
+                                    Open Image
+
+                                </a>
+
+                                <a href="@downloadUrl"
+                                   class="mail-details-attachment-download">
+
+                                    Download
+
+                                </a>
+
+                            </div>
+                        }
+                        else if (pdf)
+                        {
+                            <div class="mail-detail-file-card">
+
+                                <div class="mail-detail-file-icon pdf">
+                                    PDF
+                                </div>
+
+                                <div class="mail-detail-file-info">
+
+                                    <div class="mail-detail-file-name">
+                                        @fileName
+                                    </div>
+
+                                    <div class="mail-detail-file-size">
+                                        @FormatFileSize(
+                                            attachment.FileSize)
+                                    </div>
+
+                                </div>
+
+                                <a href="@downloadUrl"
+                                   class="mail-details-attachment-download">
+
+                                    Download
+
+                                </a>
+
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="mail-detail-file-card">
+
+                                <div class="mail-detail-file-icon">
+                                    📎
+                                </div>
+
+                                <div class="mail-detail-file-info">
+
+                                    <div class="mail-detail-file-name">
+                                        @fileName
+                                    </div>
+
+                                    <div class="mail-detail-file-size">
+                                        @FormatFileSize(
+                                            attachment.FileSize)
+                                    </div>
+
+                                </div>
+
+                                <a href="@downloadUrl"
+                                   class="mail-details-attachment-download">
+
+                                    Download
+
+                                </a>
+
+                            </div>
+                        }
+
+                    </div>
                 }
 
-            </div>
-
-            <div class="mail-details-star">
-
-                <form asp-controller="Mail"
-                      asp-action="ToggleStar"
-                      method="post">
-
-                    @Html.AntiForgeryToken()
-
-                    <input type="hidden"
-                           name="id"
-                           value="@Model.Id" />
-
-                    <button type="submit"
-                            class="mail-star-button @(Model.IsStarred ? "active" : "")"
-                            title="@(Model.IsStarred ? "Remove star" : "Star")">
-
-                        @(Model.IsStarred ? "★" : "☆")
-
-                    </button>
-
-                </form>
-
-            </div>
-
-        </div>
-
-        <div class="mail-details-meta">
-
-            <div>
-                <strong>From:</strong>
-                @Model.SenderEmail
-            </div>
-
-            <div>
-                <strong>To:</strong>
-                @Model.RecipientEmail
-            </div>
-
-            @if (!string.IsNullOrWhiteSpace(Model.CcEmails))
-            {
-                <div>
-                    <strong>Cc:</strong>
-                    @Model.CcEmails
-                </div>
-            }
-
-            @if (!string.IsNullOrWhiteSpace(Model.BccEmails))
-            {
-                <div>
-                    <strong>Bcc:</strong>
-                    @Model.BccEmails
-                </div>
-            }
-
-            <div>
-                <strong>Date:</strong>
-                @Model.SentAt.ToString(
-                    "dd MMM yyyy, hh:mm tt")
-            </div>
-
-        </div>
-
-        <div class="mail-details-divider"></div>
-
-        <div class="mail-details-body">
-
-            @Html.Raw(safeBody)
-
-        </div>
-
-        @if (Model.Attachments != null &&
-             Model.Attachments.Count > 0)
+            </section>
+        }
+        else if (databaseAttachments.Count > 0)
         {
-            <div class="mail-details-divider"></div>
+            <section class="mail-details-attachments">
 
-            <div class="mail-details-attachments">
+                <div class="mail-details-section-title">
 
-                <div class="mail-details-attachments-title">
-                    Attachments (@Model.Attachments.Count)
-                </div>
+                    Attachments
 
-                <div class="mail-attachment-list">
-
-                    @foreach (var attachment in Model.Attachments)
-                    {
-                        <a asp-controller="Mail"
-                           asp-action="DownloadAttachment"
-                           asp-route-id="@attachment.Id"
-                           class="mail-attachment-item">
-
-                            <span class="mail-attachment-icon">
-                                📎
-                            </span>
-
-                            <span class="mail-attachment-info">
-
-                                <span class="mail-attachment-name">
-                                    @attachment.OriginalFileName
-                                </span>
-
-                                <span class="mail-attachment-size">
-
-                                    @{
-                                        double sizeMb =
-                                            attachment.FileSize /
-                                            1024d /
-                                            1024d;
-                                    }
-
-                                    @if (sizeMb >= 1)
-                                    {
-                                        @($"{sizeMb:0.##} MB")
-                                    }
-                                    else
-                                    {
-                                        double sizeKb =
-                                            attachment.FileSize /
-                                            1024d;
-
-                                        @($"{sizeKb:0.##} KB")
-                                    }
-
-                                </span>
-
-                            </span>
-
-                            <span class="mail-attachment-download">
-                                Download
-                            </span>
-
-                        </a>
-                    }
+                    <span>
+                        (@databaseAttachments.Count)
+                    </span>
 
                 </div>
 
-            </div>
+                @foreach (var attachment in databaseAttachments)
+                {
+                    string attachmentId =
+                        attachment.Id.ToString();
+
+                    string fileName =
+                        string.IsNullOrWhiteSpace(
+                            attachment.OriginalFileName)
+                            ? "Attachment"
+                            : attachment.OriginalFileName;
+
+                    string contentType =
+                        attachment.ContentType ?? "";
+
+                    bool image =
+                        IsImage(
+                            contentType,
+                            fileName);
+
+                    bool pdf =
+                        IsPdf(
+                            contentType,
+                            fileName);
+
+                    string downloadUrl =
+                        Url.Action(
+                            "DownloadAttachment",
+                            "Mail",
+                            new
+                            {
+                                id = attachmentId
+                            }) ?? "#";
+
+                    string previewUrl =
+                        Url.Action(
+                            "PreviewAttachment",
+                            "Mail",
+                            new
+                            {
+                                id = attachmentId
+                            }) ?? "#";
+
+                    <div class="mail-detail-attachment">
+
+                        @if (image)
+                        {
+                            <div class="mail-detail-image-preview">
+
+                                <a href="@previewUrl"
+                                   target="_blank"
+                                   rel="noopener noreferrer">
+
+                                    <img src="@previewUrl"
+                                         alt="@fileName"
+                                         loading="lazy" />
+
+                                </a>
+
+                            </div>
+
+                            <div class="mail-details-attachment-actions">
+
+                                <a href="@previewUrl"
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   class="mail-details-attachment-open">
+
+                                    Open Image
+
+                                </a>
+
+                                <a href="@downloadUrl"
+                                   class="mail-details-attachment-download">
+
+                                    Download
+
+                                </a>
+
+                            </div>
+                        }
+                        else if (pdf)
+                        {
+                            <div class="mail-detail-file-card">
+
+                                <div class="mail-detail-file-icon pdf">
+                                    PDF
+                                </div>
+
+                                <div class="mail-detail-file-info">
+
+                                    <div class="mail-detail-file-name">
+                                        @fileName
+                                    </div>
+
+                                    <div class="mail-detail-file-size">
+                                        @FormatFileSize(
+                                            attachment.FileSize)
+                                    </div>
+
+                                </div>
+
+                                <a href="@downloadUrl"
+                                   class="mail-details-attachment-download">
+
+                                    Download
+
+                                </a>
+
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="mail-detail-file-card">
+
+                                <div class="mail-detail-file-icon">
+                                    📎
+                                </div>
+
+                                <div class="mail-detail-file-info">
+
+                                    <div class="mail-detail-file-name">
+                                        @fileName
+                                    </div>
+
+                                    <div class="mail-detail-file-size">
+                                        @FormatFileSize(
+                                            attachment.FileSize)
+                                    </div>
+
+                                </div>
+
+                                <a href="@downloadUrl"
+                                   class="mail-details-attachment-download">
+
+                                    Download
+
+                                </a>
+
+                            </div>
+                        }
+
+                    </div>
+                }
+
+            </section>
         }
 
-    </div>
+    </article>
 
 </div>

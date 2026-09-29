@@ -26,16 +26,24 @@ builder.Services.AddSignalR();
 
 builder.Services.AddHttpContextAccessor();
 
+var connectionString =
+    builder.Configuration.GetConnectionString(
+        "DefaultConnection")
+    ?? throw new InvalidOperationException(
+        "DefaultConnection is not configured.");
+
 builder.Services.AddDbContext<AppDbContext>(
     options =>
     {
         options.UseMySQL(
-            builder.Configuration
-                .GetConnectionString(
-                    "DefaultConnection"));
+            connectionString);
     });
 
 builder.Services.AddScoped<MessengerService>();
+
+builder.Services.AddScoped<
+    IMailServerService,
+    MailServerService>();
 
 builder.Services.AddSingleton<
     MailHtmlSanitizer>();
@@ -49,26 +57,47 @@ builder.Services.AddScoped<
     ExportService>();
 
 builder.Services.AddScoped<
-    IMailService,
-    MailService>();
-
-builder.Services.AddScoped<
     LoginService>();
+
+builder.Services.Configure<SmtpSettings>(
+    options =>
+    {
+        var mailSettings =
+            builder.Configuration
+                .GetSection(
+                    "MailServerSettings");
+
+        options.Host =
+            mailSettings["SmtpHost"]
+            ?? "";
+
+        options.Port =
+            int.TryParse(
+                mailSettings["SmtpPort"],
+                out int smtpPort)
+                ? smtpPort
+                : 587;
+
+        options.SenderName =
+            "User Management System";
+
+        options.SenderEmail =
+            mailSettings["MailboxEmail"]
+            ?? "";
+
+        options.Password =
+            builder.Configuration[
+                "SmtpSettings:Password"]
+            ?? "";
+    });
 
 builder.Services.AddScoped<
     IEmailService,
     EmailService>();
 
-builder.Services.Configure<SmtpSettings>(
-    builder.Configuration
-        .GetSection("SmtpSettings"));
-
-builder.Services.Configure<IncomingMailSettings>(
-    builder.Configuration
-        .GetSection("IncomingMailSettings"));
-
-builder.Services.AddHostedService<
-    IncomingMailService>();
+builder.Services.AddScoped<
+    IMailService,
+    MailService>();
 
 QuestPDF.Settings.License =
     LicenseType.Community;

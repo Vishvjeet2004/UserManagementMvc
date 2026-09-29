@@ -3,6 +3,9 @@
 @{
     var userName =
         Context.Session.GetString("UserName") ?? "User";
+
+    var currentUserId =
+        Context.Session.GetInt32("UserId") ?? 0;
 }
 
 <!DOCTYPE html>
@@ -30,6 +33,10 @@
           href="~/css/mail.css"
           asp-append-version="true" />
 
+    <link rel="stylesheet"
+          href="~/css/mail-messenger-floating.css"
+          asp-append-version="true" />
+
 </head>
 
 <body>
@@ -51,7 +58,9 @@
                 <a asp-controller="Mail"
                    asp-action="Inbox">
 
-                    <span class="mail-brand-icon">✉</span>
+                    <span class="mail-brand-icon">
+                        ✉
+                    </span>
 
                     <span class="mail-brand-text">
                         Mail
@@ -118,8 +127,6 @@
                     </span>
 
                 </a>
-
-             
 
                 <a asp-controller="Mail"
                    asp-action="Drafts"
@@ -213,19 +220,120 @@
 
     </div>
 
+
+    @if (currentUserId > 0)
+    {
+        <div id="mailMessengerWidget"
+             class="mail-messenger-widget"
+             data-current-user-id="@currentUserId">
+
+            <button type="button"
+                    id="mailMessengerLauncher"
+                    class="mail-messenger-launcher"
+                    title="Open Messenger"
+                    aria-label="Open Messenger"
+                    aria-expanded="false">
+
+                <span class="mail-messenger-launcher-icon">
+                    💬
+                </span>
+
+                <span id="mailMessengerUnread"
+                      class="mail-messenger-unread"
+                      aria-hidden="true">
+                    0
+                </span>
+
+            </button>
+
+
+            <section id="mailMessengerPanel"
+                     class="mail-messenger-panel"
+                     aria-hidden="true">
+
+                <div id="mailMessengerHeader"
+                     class="mail-messenger-header">
+
+                    <div class="mail-messenger-title">
+
+                        <span class="mail-messenger-title-icon">
+                            💬
+                        </span>
+
+                        <div>
+
+                            <div class="mail-messenger-title-text">
+                                Messenger
+                            </div>
+
+                            <div class="mail-messenger-title-subtitle">
+                                Real-time chat
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="mail-messenger-actions">
+
+                        <button type="button"
+                                id="mailMessengerOpenFull"
+                                class="mail-messenger-action-button"
+                                title="Open Messenger"
+                                aria-label="Open Messenger">
+                            ↗
+                        </button>
+
+                        <button type="button"
+                                id="mailMessengerClose"
+                                class="mail-messenger-action-button"
+                                title="Close Messenger"
+                                aria-label="Close Messenger">
+                            ×
+                        </button>
+
+                    </div>
+
+                </div>
+
+                <div class="mail-messenger-body">
+
+                    <iframe id="mailMessengerFrame"
+                            class="mail-messenger-frame"
+                            src="about:blank"
+                            title="Messenger">
+                    </iframe>
+
+                </div>
+
+            </section>
+
+        </div>
+    }
+
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
 
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 
+    <script src="~/js/mail-messenger-floating.js"
+            asp-append-version="true"></script>
+
     <script>
 
-            function toggleMailSidebar() {
+        function toggleMailSidebar() {
 
-                document
-                    .querySelector(".mail-app")
-                    .classList.toggle("mail-sidebar-collapsed");
+            const mailApp =
+                document.querySelector(".mail-app");
 
+            if (!mailApp) {
+                return;
             }
+
+            mailApp.classList.toggle(
+                "mail-sidebar-collapsed"
+            );
+        }
 
     </script>
 

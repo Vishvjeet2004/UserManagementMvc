@@ -1,13 +1,20 @@
 ﻿@using Microsoft.AspNetCore.Http
 
 @{
-    /*
-        Session se logged-in user ki details le rahe hain.
-        Agar UserId session me hai, to user logged in maana jayega.
-    */
+    // Read the current session state.
     var userName = Context.Session.GetString("UserName");
     var userRole = Context.Session.GetString("UserRole");
     var isLoggedIn = Context.Session.GetInt32("UserId") != null;
+
+    // Detect whether the current page belongs to the Mail controller.
+    var currentController =
+        ViewContext.RouteData.Values["controller"]?.ToString();
+
+    var isMailPage =
+        string.Equals(
+            currentController,
+            "Mail",
+            StringComparison.OrdinalIgnoreCase);
 }
 
 <!DOCTYPE html>
@@ -15,44 +22,53 @@
 <head>
     <meta charset="utf-8" />
 
-    <!-- Responsive design ke liye viewport -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Configure responsive page scaling. -->
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0" />
 
-    <title>@ViewData["Title"] - UserManagementMvc</title>
+    <title>
+        @ViewData["Title"] - UserManagementMvc
+    </title>
 
     <script type="importmap"></script>
 
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet" 
-        href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <!-- Load Bootstrap styles. -->
+    <link rel="stylesheet"
+          href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
 
-    <!-- Project CSS files -->
-    <link rel="stylesheet" 
-        href="~/css/site.css" 
-        asp-append-version="true" />
+    <!-- Load the main project styles. -->
+    <link rel="stylesheet"
+          href="~/css/site.css"
+          asp-append-version="true" />
 
+    <!-- Load Messenger styles. -->
     <link rel="stylesheet"
           href="~/css/messenger.css"
           asp-append-version="true" />
 
-    <link rel="stylesheet" 
-        href="~/UserManagementMvc.styles.css" 
-        asp-append-version="true" />
+    <!-- Load the floating Mail Messenger styles. -->
+    @if (isMailPage)
+    {
+        <link rel="stylesheet"
+              href="~/css/mail-messenger-floating.css"
+              asp-append-version="true" />
+    }
 
-  
+    <!-- Load generated project styles. -->
+    <link rel="stylesheet"
+          href="~/UserManagementMvc.styles.css"
+          asp-append-version="true" />
 </head>
 
 <body>
 
-    <!-- 
-         Navbar Section
-         -->
+    <!-- Render the main navigation bar. -->
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
 
             <div class="container-fluid">
 
-                <!-- Website Brand / Home Link -->
+                <!-- Render the application brand link. -->
                 <a class="navbar-brand"
                    asp-area=""
                    asp-controller="Home"
@@ -60,9 +76,7 @@
                     UserManagementMvc
                 </a>
 
-
-
-                <!-- Mobile responsive navbar button -->
+                <!-- Render the mobile navigation toggle. -->
                 <button class="navbar-toggler"
                         type="button"
                         data-bs-toggle="collapse"
@@ -76,12 +90,10 @@
 
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
 
-                    <!-- 
-                         Left Side Navbar Links
-                         -->
+                    <!-- Render the primary navigation links. -->
                     <ul class="navbar-nav flex-grow-1">
 
-                        <!-- Home Link -->
+                        <!-- Render the Home navigation link. -->
                         <li class="nav-item">
                             <a class="nav-link text-dark"
                                asp-controller="Home"
@@ -90,14 +102,15 @@
                             </a>
                         </li>
 
+                        <!-- Render public navigation links. -->
                         @if (!isLoggedIn)
-                        {    
+                        {
                         }
                         else
                         {
-                                                 }
+                        }
 
-                        <!-- Privacy Link -->
+                        <!-- Render the Privacy navigation link. -->
                         <li class="nav-item">
                             <a class="nav-link text-dark"
                                asp-controller="Home"
@@ -105,6 +118,8 @@
                                 Privacy
                             </a>
                         </li>
+
+                        <!-- Render the Help navigation link. -->
                         <li class="nav-item">
                             <a class="nav-link text-dark"
                                asp-controller="Home"
@@ -115,16 +130,12 @@
 
                     </ul>
 
-                    <!--
-                         Right Side Navbar Links
-                         -->
+                    <!-- Render authenticated user navigation links. -->
                     <ul class="navbar-nav">
 
-                     
                         @if (isLoggedIn)
                         {
-
-                            <!-- Messenger Link -->
+                            <!-- Render the Messenger navigation link. -->
                             <li class="nav-item">
                                 <a class="nav-link text-success"
                                    asp-controller="Messenger"
@@ -133,9 +144,7 @@
                                 </a>
                             </li>
 
-                      
-
-                            <!-- Mail Link -->
+                            <!-- Render the Mail navigation link. -->
                             <li class="nav-item">
                                 <a class="nav-link text-primary"
                                    asp-controller="Mail"
@@ -144,17 +153,13 @@
                                 </a>
                             </li>
 
-                         
-
-                            <!-- Logout Link -->
+                            <!-- Render the Logout navigation link. -->
                             <li class="nav-item">
                                 <a class="nav-link text-danger"
                                    asp-controller="Auth"
                                    asp-action="Logout">
                                     Logout
                                 </a>
-
-
                             </li>
                         }
 
@@ -167,38 +172,46 @@
         </nav>
     </header>
 
-    <!--
-         Main Body Section
-         Isme har page ka content render hota hai
-        -->
+    <!-- Render the current page content. -->
     <div class="container">
         <main role="main" class="pb-3">
+
             @RenderBody()
+
         </main>
     </div>
 
-    <!-- Footer Section
-         -->
+    <!-- Render the floating Messenger only on Mail pages. -->
+    @if (isMailPage && isLoggedIn)
+    {
+        <partial name="_MailMessengerFloating" />
+    }
+
+    <!-- Render the application footer. -->
     <footer class="border-top footer text-muted">
         <div class="container">
             &copy; 2026 - UserManagementMvc
         </div>
     </footer>
 
-    <!--
-         JavaScript Files
-         Bootstrap bundle dropdown ke liye important hai
-        -->
-    
+    <!-- Load jQuery. -->
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
 
-    <!-- Bootstrap JS Bundle: dropdown, modal, navbar toggle ke liye required -->
+    <!-- Load Bootstrap JavaScript. -->
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Project custom JS -->
-    <script src="~/js/site.js" asp-append-version="true"></script>
+    <!-- Load the main project JavaScript. -->
+    <script src="~/js/site.js"
+            asp-append-version="true"></script>
 
-    <!-- Page-specific scripts yahan render honge -->
+    <!-- Load the floating Mail Messenger JavaScript. -->
+    @if (isMailPage && isLoggedIn)
+    {
+        <script src="~/js/mail-messenger-floating.js"
+                asp-append-version="true"></script>
+    }
+
+    <!-- Render page-specific scripts. -->
     @await RenderSectionAsync("Scripts", required: false)
 
 </body>

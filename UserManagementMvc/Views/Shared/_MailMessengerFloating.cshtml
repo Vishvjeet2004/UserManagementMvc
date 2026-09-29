@@ -1,0 +1,93 @@
+﻿@using Microsoft.AspNetCore.Http
+
+@{
+    var currentUserId = Context.Session.GetInt32("UserId") ?? 0;
+}
+
+@if (currentUserId > 0)
+{
+    <div id="mailMessengerWidget"
+         class="mail-messenger-widget"
+         data-current-user-id="@currentUserId">
+
+        <button type="button"
+                id="mailMessengerLauncher"
+                class="mail-messenger-launcher"
+                title="Open Messenger"
+                aria-label="Open Messenger"
+                aria-expanded="false">
+
+            <span class="mail-messenger-launcher-icon">
+                💬
+            </span>
+
+            <span class="mail-messenger-unread"
+                  id="mailMessengerUnread"
+                  aria-hidden="true">
+                0
+            </span>
+
+        </button>
+
+
+        <div id="mailMessengerPanel"
+             class="mail-messenger-panel"
+             aria-hidden="true">
+
+            <div id="mailMessengerHeader"
+                 class="mail-messenger-header">
+
+                <div class="mail-messenger-title">
+                    <span class="mail-messenger-title-icon">
+                        💬
+                    </span>
+
+                    <div>
+                        <div class="mail-messenger-title-text">
+                            Messenger
+                        </div>
+
+                        <div class="mail-messenger-title-subtitle">
+                            Real-time chat
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="mail-messenger-actions">
+
+                    <button type="button"
+                            id="mailMessengerOpenFull"
+                            class="mail-messenger-action-button"
+                            title="Open Messenger"
+                            aria-label="Open Messenger">
+                        ↗
+                    </button>
+
+                    <button type="button"
+                            id="mailMessengerClose"
+                            class="mail-messenger-action-button"
+                            title="Close Messenger"
+                            aria-label="Close Messenger">
+                        ×
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <div class="mail-messenger-body">
+
+                <iframe id="mailMessengerFrame"
+                        class="mail-messenger-frame"
+                        src="about:blank"
+                        title="Messenger">
+                </iframe>
+
+            </div>
+
+        </div>
+
+    </div>
+}

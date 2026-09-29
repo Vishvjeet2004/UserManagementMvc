@@ -1,4 +1,4 @@
-﻿@model List<UserManagementMvc.Models.MailMessage>
+﻿@model List<UserManagementMvc.ViewModels.MailDetailsViewModel>
 
 @using System.Text.RegularExpressions
 @using System.Net
@@ -13,17 +13,21 @@
             return string.Empty;
         }
 
-        string text = Regex.Replace(
-            html,
-            "<.*?>",
-            " ");
+        string text =
+            Regex.Replace(
+                html,
+                "<.*?>",
+                " ");
 
-        text = WebUtility.HtmlDecode(text);
+        text =
+            WebUtility.HtmlDecode(
+                text);
 
-        text = Regex.Replace(
-            text,
-            @"\s+",
-            " ");
+        text =
+            Regex.Replace(
+                text,
+                @"\s+",
+                " ");
 
         return text.Trim();
     }
@@ -35,7 +39,10 @@
 
         <div>
             <h2>Inbox</h2>
-            <p>Your received messages.</p>
+
+            <p>
+                Your received messages.
+            </p>
         </div>
 
         <a asp-controller="Mail"
@@ -62,7 +69,8 @@
 
     <div class="mail-list">
 
-        @if (Model == null || Model.Count == 0)
+        @if (Model == null ||
+             Model.Count == 0)
         {
             <div class="mail-empty">
 
@@ -82,7 +90,62 @@
         {
             @foreach (var mail in Model)
             {
-                <div class="mail-row @(mail.IsRead ? "" : "mail-unread")">
+                bool isServerMessage =
+                    mail.ServerMessage != null;
+
+                string messageId =
+                    isServerMessage
+                        ? mail.ServerMessage!.Id
+                        : mail.DatabaseMessage!.Id.ToString();
+
+                string sender =
+                    isServerMessage
+                        ? mail.ServerMessage!.SenderEmail
+                        : mail.DatabaseMessage!.SenderEmail;
+
+                string subject =
+                    isServerMessage
+                        ? mail.ServerMessage!.Subject
+                        : mail.DatabaseMessage!.Subject;
+
+                string body =
+                    isServerMessage
+                        ? mail.ServerMessage!.Body
+                        : mail.DatabaseMessage!.Body;
+
+                bool isRead =
+                    isServerMessage
+                        ? mail.ServerMessage!.IsRead
+                        : mail.DatabaseMessage!.IsRead;
+
+                bool isStarred =
+                    isServerMessage
+                        ? mail.ServerMessage!.IsStarred
+                        : mail.DatabaseMessage!.IsStarred;
+
+                DateTime sentAt =
+                    isServerMessage
+                        ? mail.ServerMessage!.SentAt
+                        : mail.DatabaseMessage!.SentAt;
+
+                string messageType =
+                    isServerMessage
+                        ? "External"
+                        : (
+                            string.Equals(
+                                mail.DatabaseMessage!.MessageType,
+                                "External",
+                                StringComparison.OrdinalIgnoreCase)
+                                ? "External"
+                                : "Internal"
+                        );
+
+                int attachmentCount =
+                    isServerMessage
+                        ? mail.ServerMessage!.Attachments.Count
+                        : mail.DatabaseMessage!.Attachments.Count;
+
+                <div class="mail-row @(isRead ? "" : "mail-unread")">
 
                     <div class="mail-star">
 
@@ -94,17 +157,17 @@
 
                             <input type="hidden"
                                    name="id"
-                                   value="@mail.Id" />
+                                   value="@messageId" />
 
                             <input type="hidden"
                                    name="returnAction"
                                    value="Inbox" />
 
                             <button type="submit"
-                                    class="mail-star-button @(mail.IsStarred ? "active" : "")"
-                                    title="@(mail.IsStarred ? "Remove star" : "Star")">
+                                    class="mail-star-button @(isStarred ? "active" : "")"
+                                    title="@(isStarred ? "Remove star" : "Star")">
 
-                                @(mail.IsStarred ? "★" : "☆")
+                                @(isStarred ? "★" : "☆")
 
                             </button>
 
@@ -114,7 +177,7 @@
 
                     <a asp-controller="Mail"
                        asp-action="Details"
-                       asp-route-id="@mail.Id"
+                       asp-route-id="@messageId"
                        class="mail-row-content">
 
                         <div class="mail-row-main">
@@ -122,47 +185,47 @@
                             <div class="mail-row-sender">
 
                                 <span>
-                                    @mail.SenderEmail
+                                    @sender
                                 </span>
 
-                                @if (mail.MessageType == "External")
-                                {
-                                    <span class="mail-type-badge">
-                                        External
-                                    </span>
-                                }
+                                <span class="mail-type-badge">
+                                    @messageType
+                                </span>
 
                             </div>
 
                             <div class="mail-row-subject">
 
-                                @(string.IsNullOrWhiteSpace(mail.Subject)
+                                @(string.IsNullOrWhiteSpace(subject)
                                     ? "(No subject)"
-                                    : mail.Subject)
+                                    : subject)
 
-                                @if (mail.Attachments != null &&
-                                     mail.Attachments.Count > 0)
+                                @if (attachmentCount > 0)
                                 {
                                     <span class="mail-attachment-indicator"
                                           title="This message has attachments">
-                                        📎 @mail.Attachments.Count
+
+                                        📎 @attachmentCount
+
                                     </span>
                                 }
 
                             </div>
 
                             <div class="mail-row-preview">
-                                @GetPreview(mail.Body)
+
+                                @GetPreview(body)
+
                             </div>
 
                         </div>
 
                         <div class="mail-row-date">
-                            @(
-                                mail.SentAt.Date == DateTime.Today
-                                    ? mail.SentAt.ToString("h:mm tt")
-                                    : mail.SentAt.ToString("dd MMM")
-                            )
+
+                            @(sentAt.Date == DateTime.Today
+                                ? sentAt.ToString("h:mm tt")
+                                : sentAt.ToString("dd MMM"))
+
                         </div>
 
                     </a>
@@ -171,9 +234,11 @@
 
                         <a asp-controller="Mail"
                            asp-action="DeleteInbox"
-                           asp-route-id="@mail.Id"
+                           asp-route-id="@messageId"
                            class="mail-action-button danger">
+
                             Delete
+
                         </a>
 
                     </div>
